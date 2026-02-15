@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Self-Growth Mechanisms - OpenClaw Analysis</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <span class="logo">OpenClaw Analysis</span>
+    <button class="sidebar-toggle" id="sidebarToggle">&#9776;</button>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="01-memory-strategy.html">Memory</a>
+      <a href="02-harness-framework.html">Harness</a>
+      <a href="03-self-growth-mechanisms.html" class="active">Growth</a>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+
+    <!-- Sidebar ToC -->
+    <aside class="sidebar" id="sidebar">
+      <div class="toc-title">Table of Contents</div>
+      <ul class="toc-list">
+        <li><a href="#summary">Summary</a></li>
+        <li><a href="#sec1">1. Tool System</a></li>
+        <li class="sub"><a href="#sec1-1">1.1 Tool Definition &amp; Registration</a></li>
+        <li class="sub"><a href="#sec1-2">1.2 Tool Policy Control</a></li>
+        <li class="sub"><a href="#sec1-3">1.3 Self-Growth Relevance</a></li>
+        <li><a href="#sec2">2. Tool Result Feedback Loop</a></li>
+        <li class="sub"><a href="#sec2-1">2.1 Tool Execution Event Flow</a></li>
+        <li class="sub"><a href="#sec2-2">2.2 Tool Result Guard</a></li>
+        <li class="sub"><a href="#sec2-3">2.3 Context Pruning</a></li>
+        <li class="sub"><a href="#sec2-4">2.4 Compaction</a></li>
+        <li><a href="#sec3">3. Memory System</a></li>
+        <li class="sub"><a href="#sec3-1">3.1 Architecture</a></li>
+        <li class="sub"><a href="#sec3-2">3.2 Hybrid Search</a></li>
+        <li class="sub"><a href="#sec3-3">3.3 Realtime Sync</a></li>
+        <li class="sub"><a href="#sec3-4">3.4 Embedding Providers</a></li>
+        <li class="sub"><a href="#sec3-5">3.5 System Prompt Integration</a></li>
+        <li><a href="#sec4">4. Onboarding/Setup Flow</a></li>
+        <li><a href="#sec5">5. Config Evolution</a></li>
+        <li><a href="#sec6">6. Doctor/Diagnostics</a></li>
+        <li><a href="#sec7">7. Media Pipeline</a></li>
+        <li><a href="#sec8">8. Skill System</a></li>
+        <li><a href="#sec9">9. Hook System</a></li>
+        <li><a href="#sec10">10. Model Fallback</a></li>
+        <li><a href="#sec11">11. Design Patterns</a></li>
+        <li><a href="#sec12">12. Architecture Lessons</a></li>
+        <li><a href="#appendix-a">Appendix A: Key Files</a></li>
+        <li><a href="#appendix-b">Appendix B: Growth Cycle</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <h1>OpenClaw Self-Growth Mechanisms Analysis Report</h1>
+      <p>AIエージェントが環境から学習し、自己改善し、新たな能力を獲得するための「自己成長メカニズム」を包括的に分析します。</p>
+
+      <!-- Stats Row -->
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-value">8</div>
+          <div class="stat-label">Growth Mechanisms</div>
+        </div>
+        <div class="stat-box purple">
+          <div class="stat-value">7</div>
+          <div class="stat-label">Design Patterns</div>
+        </div>
+        <div class="stat-box cyan">
+          <div class="stat-value">10</div>
+          <div class="stat-label">Architecture Principles</div>
+        </div>
+        <div class="stat-box green">
+          <div class="stat-value">12</div>
+          <div class="stat-label">Doctor Modules</div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- Summary -->
+      <!-- ============================================================ -->
+      <div id="summary" class="summary-box">
+        <div class="summary-title">Executive Summary</div>
+        <p>
+          OpenClawは、AIエージェントが環境から学習・自己改善・新能力獲得を行うための複数の「自己成長メカニズム」を内蔵するプラットフォームです。
+          分析の結果、以下の<strong>8つの主要メカニズム</strong>を特定しました。
+        </p>
+        <ol>
+          <li><strong>Tool System</strong> &mdash; 動的ツール登録・解決・ポリシー制御</li>
+          <li><strong>Tool Result Feedback Loop</strong> &mdash; 実行結果からの行動修正サイクル</li>
+          <li><strong>Memory System</strong> &mdash; RAG型学習（ベクトル/ハイブリッド検索）</li>
+          <li><strong>Onboarding/Setup Flow</strong> &mdash; 新環境への適応的セットアップ</li>
+          <li><strong>Config Evolution</strong> &mdash; 動的設定更新とマイグレーション</li>
+          <li><strong>Doctor/Diagnostics</strong> &mdash; 自己診断と自動修復</li>
+          <li><strong>Media Pipeline</strong> &mdash; 画像・音声・動画の処理パイプライン</li>
+          <li><strong>Skill System</strong> &mdash; 動的能力拡張メカニズム</li>
+        </ol>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 1: Tool System -->
+      <!-- ============================================================ -->
+      <h2 id="sec1">
+        <span class="section-number" style="background: rgba(108,138,255,0.15); color: var(--accent-blue);">1</span>
+        Tool System
+      </h2>
+
+      <p>OpenClawのツールシステムは多層アーキテクチャで構成され、コアツール・SDKツール・プラグインツールの3層にわたる動的登録・解決機構を持ちます。</p>
+
+      <h3 id="sec1-1">1.1 ツール定義と登録</h3>
+
+      <div class="layer-stack">
+        <div class="layer layer-1">
+          <div class="layer-label">Layer 1: Core Tools (Built-in)</div>
+          <div class="layer-desc"><code>src/agents/openclaw-tools.ts:22-60</code> <code>createOpenClawTools()</code></div>
+          <div class="layer-items">
+            <span class="item">createBrowserTool</span>
+            <span class="item">createCanvasTool</span>
+            <span class="item">createNodesTool</span>
+            <span class="item">createCronTool</span>
+            <span class="item">createGatewayTool</span>
+            <span class="item">createImageTool</span>
+            <span class="item">createMessageTool</span>
+            <span class="item">createSessionStatusTool</span>
+            <span class="item">createSessionsHistoryTool</span>
+            <span class="item">createSessionsListTool</span>
+            <span class="item">createSessionsSendTool</span>
+            <span class="item">createSessionsSpawnTool</span>
+            <span class="item">createWebFetchTool</span>
+            <span class="item">createWebSearchTool</span>
+            <span class="item">createTtsTool</span>
+            <span class="item">createAgentsListTool</span>
+          </div>
+        </div>
+        <div class="layer layer-2">
+          <div class="layer-label">Layer 2: Coding Tools (SDK)</div>
+          <div class="layer-desc"><code>@mariozechner/pi-coding-agent</code> - コーディング特化ツール群</div>
+          <div class="layer-items">
+            <span class="item">codingTools</span>
+            <span class="item">createEditTool</span>
+            <span class="item">createReadTool</span>
+            <span class="item">createWriteTool</span>
+            <span class="item">readTool</span>
+            <span class="item">createExecTool</span>
+            <span class="item">createProcessTool</span>
+            <span class="item">createApplyPatchTool</span>
+          </div>
+        </div>
+        <div class="layer layer-3">
+          <div class="layer-label">Layer 3: Plugin Tools (Dynamic)</div>
+          <div class="layer-desc"><code>src/plugins/registry.ts:146-515</code> <code>createPluginRegistry()</code></div>
+          <div class="layer-items">
+            <span class="item">registerTool()</span>
+            <span class="item">resolvePluginTools()</span>
+            <span class="item">collision detection</span>
+            <span class="item">optional tool allow-list</span>
+            <span class="item">WeakMap metadata</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">Key Insight</div>
+        <p>プラグインツールは<strong>衝突検出</strong>を備え、同名ツールが複数プラグインから登録された場合にも安全に処理されます。WeakMapによるメタデータ追跡により、ツールの出自を常に把握可能です。</p>
+      </div>
+
+      <h3 id="sec1-2">1.2 ツールポリシー制御</h3>
+
+      <p>プロファイルベースのポリシーにより、エージェントに段階的な権限を付与できます。</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Profile</th>
+              <th>許可されるツール</th>
+              <th>用途</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag blue">minimal</span></td>
+              <td><code>session_status</code> のみ</td>
+              <td>最小権限のサンドボックス</td>
+            </tr>
+            <tr>
+              <td><span class="tag purple">coding</span></td>
+              <td>fs + runtime + sessions + memory + image</td>
+              <td>コーディングタスク</td>
+            </tr>
+            <tr>
+              <td><span class="tag cyan">messaging</span></td>
+              <td>messaging + sessions_list</td>
+              <td>メッセージングタスク</td>
+            </tr>
+            <tr>
+              <td><span class="tag green">full</span></td>
+              <td>制限なし</td>
+              <td>フルアクセス</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>さらに、グループベースの展開により、抽象的なグループ名から具体的なツールセットへ解決されます。</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th>Expanded Tools</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>group:memory</code></td>
+              <td><code>memory_search</code>, <code>memory_get</code></td>
+            </tr>
+            <tr>
+              <td><code>group:web</code></td>
+              <td><code>web_search</code>, <code>web_fetch</code></td>
+            </tr>
+            <tr>
+              <td><code>group:fs</code></td>
+              <td><code>read</code>, <code>write</code>, <code>edit</code>, <code>apply_patch</code></td>
+            </tr>
+            <tr>
+              <td><code>group:runtime</code></td>
+              <td><code>exec</code>, <code>process</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Owner-only制約:</strong> <code>OWNER_ONLY_TOOL_NAMES</code> セット（例: <code>whatsapp_login</code>）により、特定ツールはオーナーのみ使用可能。<code>applyOwnerOnlyToolPolicy()</code> で実行時にフィルタリングされます。</p>
+
+      <h3 id="sec1-3">1.3 自己成長との関連</h3>
+
+      <div class="card-grid">
+        <div class="card blue">
+          <div class="card-title">Plugin水平拡張</div>
+          <div class="card-desc">プラグインを追加するだけで、エージェントが利用可能なツールが増加。コアシステムの変更なしに新能力を獲得できます。</div>
+        </div>
+        <div class="card purple">
+          <div class="card-title">段階的権限付与</div>
+          <div class="card-desc">ポリシーベースで minimal &rarr; coding &rarr; messaging &rarr; full と段階的に権限を拡大。信頼性に応じたアクセス制御が可能です。</div>
+        </div>
+        <div class="card cyan">
+          <div class="card-title">動的解決</div>
+          <div class="card-desc">ツールはランタイムで動的に解決されるため、起動後もプラグインの追加・削除に対応できます。</div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 2: Tool Result Feedback Loop -->
+      <!-- ============================================================ -->
+      <h2 id="sec2">
+        <span class="section-number" style="background: rgba(167,139,250,0.15); color: var(--accent-purple);">2</span>
+        Tool Result Feedback Loop
+      </h2>
+
+      <p>ツール実行結果をLLMに返し、次のアクションを修正する「フィードバックループ」はエージェントの適応的行動の根幹です。</p>
+
+      <h3 id="sec2-1">2.1 ツール実行イベントフロー</h3>
+
+      <div class="flow-diagram">
+        <div class="flow-step highlight">handleToolExecutionStart()</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">emitAgentEvent (phase: start)</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">onToolResult callback</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step highlight">[ Tool Execution ]</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">handleToolExecutionEnd()</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">extractToolResultText / extractToolErrorMessage</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">sanitizeToolResult</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">emitAgentEvent (phase: end)</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step highlight">Return result to LLM</div>
+      </div>
+
+      <h3 id="sec2-2">2.2 Tool Result Guard</h3>
+
+      <p><code>installSessionToolResultGuard()</code> は、セッションの整合性を保つための安全機構です。</p>
+
+      <ul>
+        <li><code>sessionManager.appendMessage</code> をインターセプト</li>
+        <li>保留中のツールコールを追跡</li>
+        <li>不足するツール結果を <code>makeMissingToolResult()</code> で合成</li>
+        <li><code>transformToolResultForPersistence</code> フックによる永続化前の変換</li>
+      </ul>
+
+      <div class="callout warning">
+        <div class="callout-title">Important</div>
+        <p>ツール実行が異常終了した場合でも、Result Guardがダミー結果を合成することでLLMの対話が破綻しません。これは自律的エラー回復の一例です。</p>
+      </div>
+
+      <h3 id="sec2-3">2.3 Context Pruning</h3>
+
+      <p><code>makeToolPrunablePredicate()</code> により、allow/denyパターンで古いツール結果のプルーニング可否を判定。コンテキストウィンドウの効率的利用を実現します。</p>
+
+      <h3 id="sec2-4">2.4 Compaction</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Value</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>BASE_CHUNK_RATIO</code></td>
+              <td><strong>0.4</strong></td>
+              <td>基本チャンク分割比率</td>
+            </tr>
+            <tr>
+              <td><code>MIN_CHUNK_RATIO</code></td>
+              <td><strong>0.15</strong></td>
+              <td>最小チャンク分割比率</td>
+            </tr>
+            <tr>
+              <td><code>SAFETY_MARGIN</code></td>
+              <td><strong>1.2</strong></td>
+              <td>トークン安全マージン倍率</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>トークンベースでチャンク分割 &rarr; チャンクごとにLLM要約 &rarr; 要約をマージ（判断・TODO・未解決質問・制約を保存）</p>
+
+      <h4>Full Feedback Loop Diagram</h4>
+
+      <div class="diagram">
++------------------+        +------------------------+        +-------------------------+
+|       LLM        |        |   Tool Execution       |        |   Result Processing     |
+|                  |        |   Engine               |        |   Pipeline              |
+|  system prompt   |------->|  exec / read / write   |------->|  sanitize               |
+|  tool call       |        |  search / message      |        |  transform              |
+|  decision        |        |  browser / image       |        |  guard                  |
+|  response gen    |        |                        |        |                         |
++--------+---------+        +------------------------+        +------------+------------+
+         ^                                                                 |
+         |                                                                 v
++--------+---------+        +------------------------+        +------------+------------+
+|   Compaction /   |        |    Memory Index        |        |   Session Persistence   |
+|   Pruning        |<-------|    (reuse)             |<-------|   (transcript.jsonl)    |
+|                  |        |                        |        |                         |
+|  preserve key    |        |  vector search         |        |  append messages        |
+|  info via        |        |  keyword search        |        |  tool results           |
+|  LLM summary    |        |  hybrid merge          |        |  agent events           |
++------------------+        +------------------------+        +-------------------------+
+
+                        === Continuous Feedback Cycle ===
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 3: Memory System -->
+      <!-- ============================================================ -->
+      <h2 id="sec3">
+        <span class="section-number" style="background: rgba(103,232,249,0.15); color: var(--accent-cyan);">3</span>
+        Memory System (Learning/Adaptation)
+      </h2>
+
+      <p>RAG型のメモリシステムにより、エージェントは過去の経験から継続的に学習します。</p>
+
+      <h3 id="sec3-1">3.1 Architecture Overview</h3>
+
+      <p>
+        <strong>MemoryIndexManager</strong> クラス (<code>src/memory/manager.ts:108</code>, 2,355行) がメモリシステムの中核です。
+      </p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Data Source</th>
+              <th>Content</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag blue">memory</span></td>
+              <td><code>MEMORY.md</code>, <code>memory.md</code>, <code>memory/</code></td>
+              <td>明示的なメモリファイル</td>
+            </tr>
+            <tr>
+              <td><span class="tag purple">sessions</span></td>
+              <td><code>.jsonl</code> transcripts</td>
+              <td>セッションの対話履歴</td>
+            </tr>
+            <tr>
+              <td><span class="tag cyan">extraPaths</span></td>
+              <td>Additional configured paths</td>
+              <td>追加設定パス</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>SQLiteスキーマ:</strong></p>
+      <pre><code><span class="kw">CREATE TABLE</span> files     <span class="cm">-- source file tracking</span>
+<span class="kw">CREATE TABLE</span> chunks    <span class="cm">-- text chunks from files</span>
+<span class="kw">CREATE TABLE</span> chunks_vec <span class="cm">-- sqlite-vec: vector embeddings</span>
+<span class="kw">CREATE TABLE</span> chunks_fts <span class="cm">-- FTS5: full-text search index</span>
+<span class="kw">CREATE TABLE</span> embedding_cache <span class="cm">-- cached embedding results</span></code></pre>
+
+      <h3 id="sec3-2">3.2 Hybrid Search</h3>
+
+      <div class="flow-diagram">
+        <div class="flow-step">search() method invoked</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">Warm session (ensure index ready)</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">Sync if dirty (incremental update)</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step highlight" style="display: flex; gap: 2rem; justify-content: center; min-width: 400px;">
+          <span>BM25 Keyword Search</span>
+          <span style="color: var(--text-muted);">+</span>
+          <span>Vector Embedding Search</span>
+        </div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step highlight">Hybrid Merge (configurable weights)</div>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-title">Hybrid Search Advantage</div>
+        <p>キーワード検索（BM25）とベクトル検索を組み合わせることで、正確な用語一致と意味的類似性の両方を捕捉。重みは設定で調整可能です。</p>
+      </div>
+
+      <h3 id="sec3-3">3.3 Realtime Sync</h3>
+
+      <ul>
+        <li><strong>File watcher</strong> (chokidar): <code>add</code> / <code>change</code> / <code>unlink</code> &rarr; <code>markDirty</code></li>
+        <li><strong>Session listener</strong>: <code>onSessionTranscriptUpdate</code> &rarr; <code>scheduleSessionDirty</code></li>
+        <li><strong>Delta-based sync</strong>: バイト数とメッセージ数の閾値で差分検出し、フルリインデックスを回避</li>
+      </ul>
+
+      <h3 id="sec3-4">3.4 Embedding Providers</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Provider</th>
+              <th>Batch Support</th>
+              <th>Auto-Fallback</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>OpenAI</strong></td>
+              <td>Yes</td>
+              <td>Primary</td>
+            </tr>
+            <tr>
+              <td><strong>Gemini</strong></td>
+              <td>Yes</td>
+              <td>Secondary</td>
+            </tr>
+            <tr>
+              <td><strong>Local (node-llama)</strong></td>
+              <td>Yes</td>
+              <td>Tertiary</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="sec3-5">3.5 System Prompt Memory Integration</h3>
+
+      <p><code>buildMemorySection()</code> は、システムプロンプト内でエージェントに以下を指示します:</p>
+
+      <div class="callout info">
+        <div class="callout-title">Memory Search Instruction</div>
+        <p>「過去の作業・決定事項・日付・人物・設定・TODOに関する質問には、回答前に必ず <code>memory_search</code> を実行せよ。」</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 4: Onboarding -->
+      <!-- ============================================================ -->
+      <h2 id="sec4">
+        <span class="section-number" style="background: rgba(110,231,183,0.15); color: var(--accent-green);">4</span>
+        Onboarding/Setup Flow
+      </h2>
+
+      <p>新環境に対してアダプティブにセットアップを行うオンボーディングフローは、環境への適応の最初のステップです。</p>
+
+      <h3>4.1 Interactive Onboarding</h3>
+
+      <div class="flow-diagram">
+        <div class="flow-step">onboardCommand()</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step highlight" style="display: flex; gap: 2rem; justify-content: center; min-width: 420px;">
+          <span>runInteractiveOnboarding()</span>
+          <span style="color: var(--text-muted);">|</span>
+          <span>runNonInteractiveOnboarding()</span>
+        </div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">Auth &rarr; Channels &rarr; Hooks &rarr; Skills</div>
+      </div>
+
+      <p><strong>Adaptive Branching:</strong></p>
+      <ul>
+        <li><strong>Windows</strong> &rarr; WSL検出と設定</li>
+        <li><strong>Linux</strong> &rarr; systemdサービス登録</li>
+        <li><strong>macOS</strong> &rarr; LaunchAgentセットアップ</li>
+        <li>認証方法の自動選択</li>
+      </ul>
+
+      <h3>4.2 Workspace Bootstrap</h3>
+
+      <p>ワークスペースの初期ファイル群はテンプレートから生成され、エージェントが自己編集可能です。</p>
+
+      <div class="file-tree">
+        <span class="dir">workspace/</span><br>
+        <span class="indent"></span><span class="file">AGENTS.md</span> <span class="comment"># エージェント定義</span><br>
+        <span class="indent"></span><span class="file">SOUL.md</span> <span class="comment"># パーソナリティ設定</span><br>
+        <span class="indent"></span><span class="file">TOOLS.md</span> <span class="comment"># ツール使用ガイドライン</span><br>
+        <span class="indent"></span><span class="file">IDENTITY.md</span> <span class="comment"># アイデンティティ定義</span><br>
+        <span class="indent"></span><span class="file">USER.md</span> <span class="comment"># ユーザー情報</span><br>
+        <span class="indent"></span><span class="file">HEARTBEAT.md</span> <span class="comment"># ヘルスチェック設定</span><br>
+        <span class="indent"></span><span class="file">BOOTSTRAP.md</span> <span class="comment"># ブートストラップ手順</span><br>
+        <span class="indent"></span><span class="file">MEMORY.md</span> <span class="comment"># 学習済み知識ストア</span><br>
+      </div>
+
+      <h3>4.3 Bootstrap Hooks</h3>
+
+      <p><code>applyBootstrapHookOverrides()</code> により、プラグインがブートストラップファイルを動的に置換可能。環境固有のカスタマイズを実現します。</p>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 5: Config Evolution -->
+      <!-- ============================================================ -->
+      <h2 id="sec5">
+        <span class="section-number" style="background: rgba(251,191,36,0.15); color: var(--accent-orange);">5</span>
+        Config Evolution
+      </h2>
+
+      <p>設定は固定ではなく進化するものとして設計されています。スキーマ検証・レガシーマイグレーション・ランタイムオーバーライドの3層構造です。</p>
+
+      <h3>5.1 Config System</h3>
+
+      <div class="flow-diagram">
+        <div class="flow-step">createConfigIO</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">loadConfig &rarr; parseConfigJson5</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">migrateLegacyConfig</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">validateConfigObject (OpenClawSchema / Zod)</div>
+      </div>
+
+      <h3>5.2 Legacy Migration</h3>
+
+      <ul>
+        <li><code>detectLegacyStateMigrations()</code> &mdash; レガシー設定の自動検出</li>
+        <li><code>runLegacyStateMigrations()</code> &mdash; インタラクティブな修復実行</li>
+      </ul>
+
+      <h3>5.3 Dynamic Config Update</h3>
+
+      <p><code>loadAndMaybeMigrateDoctorConfig()</code> のフロー:</p>
+      <p>snapshot取得 &rarr; validate &rarr; migrate &rarr; ユーザー確認 &rarr; write</p>
+
+      <h3>5.4 Runtime Overrides</h3>
+
+      <ul>
+        <li>環境変数によるオーバーライド</li>
+        <li>プロファイルベースの切り替え (<code>OPENCLAW_PROFILE</code>)</li>
+      </ul>
+
+      <div class="callout tip">
+        <div class="callout-title">Design Principle</div>
+        <p>設定は「壊れうるもの」として設計。常にマイグレーションパスを用意し、新旧バージョン間の互換性を自動的に維持します。</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 6: Doctor/Diagnostics -->
+      <!-- ============================================================ -->
+      <h2 id="sec6">
+        <span class="section-number" style="background: rgba(244,114,182,0.15); color: var(--accent-pink);">6</span>
+        Doctor/Diagnostics
+      </h2>
+
+      <p>自己診断と自動修復を行う Doctor システムは、12のモジュールで構成されています。</p>
+
+      <h3>6.1 Diagnostic Modules</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th>File</th>
+              <th>Function</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>UI Repair</strong></td>
+              <td><code>doctor-ui.ts</code></td>
+              <td>UIプロトコルの鮮度チェック</td>
+            </tr>
+            <tr>
+              <td><strong>Install</strong></td>
+              <td><code>doctor-install.ts</code></td>
+              <td>ソースインストールの問題検出</td>
+            </tr>
+            <tr>
+              <td><strong>Platform</strong></td>
+              <td><code>doctor-platform-notes.ts</code></td>
+              <td>macOS LaunchAgent, 環境変数</td>
+            </tr>
+            <tr>
+              <td><strong>Config Flow</strong></td>
+              <td><code>doctor-config-flow.ts</code></td>
+              <td>設定のロード/マイグレーション</td>
+            </tr>
+            <tr>
+              <td><strong>Auth</strong></td>
+              <td><code>doctor-auth.ts</code></td>
+              <td>OAuthプロファイルの修復</td>
+            </tr>
+            <tr>
+              <td><strong>Gateway (config)</strong></td>
+              <td><code>doctor-gateway-*.ts</code></td>
+              <td>サービス設定の修復</td>
+            </tr>
+            <tr>
+              <td><strong>Gateway (health)</strong></td>
+              <td><code>doctor-gateway-*.ts</code></td>
+              <td>ヘルスチェック</td>
+            </tr>
+            <tr>
+              <td><strong>Sandbox</strong></td>
+              <td><code>doctor-sandbox.ts</code></td>
+              <td>Dockerイメージの修復</td>
+            </tr>
+            <tr>
+              <td><strong>Security</strong></td>
+              <td><code>doctor-security.ts</code></td>
+              <td>セキュリティ警告</td>
+            </tr>
+            <tr>
+              <td><strong>State Integrity</strong></td>
+              <td><code>doctor-state-integrity.ts</code></td>
+              <td>ステートディレクトリの整合性</td>
+            </tr>
+            <tr>
+              <td><strong>Workspace</strong></td>
+              <td><code>doctor-workspace.ts</code></td>
+              <td>メモリシステムの提案</td>
+            </tr>
+            <tr>
+              <td><strong>Completion</strong></td>
+              <td><code>doctor-completion.ts</code></td>
+              <td>シェル補完のセットアップ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>6.2 Diagnose &rarr; Propose &rarr; Repair Flow</h3>
+
+      <div class="flow-diagram">
+        <div class="flow-step highlight">doctorCommand()</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">Full Diagnostics (12 modules)</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">Detect Problems</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">Propose Repair to User</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step highlight">Auto-Repair (if approved)</div>
+        <div class="flow-arrow">&darr;</div>
+        <div class="flow-step">Persist to Config</div>
+      </div>
+
+      <h3>6.3 Workspace Proposals</h3>
+
+      <div class="callout info">
+        <div class="callout-title">Growth Opportunity Detection</div>
+        <p><code>shouldSuggestMemorySystem()</code>: <code>MEMORY.md</code> が存在しない場合、メモリシステムの導入を提案。Doctorは問題報告だけでなく、<strong>成長の機会</strong>を検出して提案します。</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 7: Media Pipeline -->
+      <!-- ============================================================ -->
+      <h2 id="sec7">
+        <span class="section-number" style="background: rgba(108,138,255,0.15); color: var(--accent-blue);">7</span>
+        Media Pipeline
+      </h2>
+
+      <p>画像・音声・動画の処理パイプラインにより、マルチモーダルな能力を提供します。</p>
+
+      <ul>
+        <li><strong>Media Store:</strong> <code>~/.openclaw/media/</code> に保存、ファイル名サニタイズ、SSRF防御</li>
+        <li><strong>Output Extraction:</strong> <code>splitMediaFromOutput()</code> でエージェント出力から <code>MEDIA:</code> トークンを抽出</li>
+        <li><strong>Voice Tag:</strong> <code>[[audio_as_voice]]</code> タグで音声出力をマーク</li>
+        <li><strong>Processing:</strong> MIME検出、HTTPサービング、音声処理、画像操作</li>
+      </ul>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 8: Skill System -->
+      <!-- ============================================================ -->
+      <h2 id="sec8">
+        <span class="section-number" style="background: rgba(167,139,250,0.15); color: var(--accent-purple);">8</span>
+        Skill System (Dynamic Capability Extension)
+      </h2>
+
+      <p>スキルシステムにより、エージェントは必要に応じて新しい能力を動的にロード・実行できます。</p>
+
+      <h3>8.1 Skill Loading</h3>
+
+      <div class="layer-stack">
+        <div class="layer layer-1">
+          <div class="layer-label">Bundled Skills</div>
+          <div class="layer-desc">コアに同梱されたデフォルトスキル</div>
+        </div>
+        <div class="layer layer-2">
+          <div class="layer-label">Managed Skills</div>
+          <div class="layer-desc"><code>~/.openclaw/skills/</code> にインストールされた管理スキル</div>
+        </div>
+        <div class="layer layer-3">
+          <div class="layer-label">Workspace Skills</div>
+          <div class="layer-desc">ワークスペース固有のカスタムスキル</div>
+        </div>
+        <div class="layer layer-4">
+          <div class="layer-label">Plugin Skills</div>
+          <div class="layer-desc">プラグイン経由で提供されるスキル</div>
+        </div>
+      </div>
+
+      <p>各スキルの構成:</p>
+      <div class="file-tree">
+        <span class="dir">skill-name/</span><br>
+        <span class="indent"></span><span class="file">SKILL.md</span> <span class="comment"># スキル定義（必須）</span><br>
+        <span class="indent"></span><span class="file">handler.ts</span> <span class="comment"># ハンドラー実装（任意）</span><br>
+        <span class="indent"></span><span class="file">HOOK.md</span> <span class="comment"># フック定義（任意）</span><br>
+      </div>
+
+      <h3>8.2 System Prompt Integration</h3>
+
+      <p><code>buildSkillsSection()</code> は利用可能なスキルの説明をスキャンし、適用可能な場合のみ <code>SKILL.md</code> を読み込みます。不要なコンテキスト消費を防ぐ設計です。</p>
+
+      <h3>8.3 Skill Sync</h3>
+
+      <p><code>syncSkillsToWorkspace()</code>: 管理スキルをワークスペースに自動同期。インストール・更新・削除を管理します。</p>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 9: Hook System -->
+      <!-- ============================================================ -->
+      <h2 id="sec9">
+        <span class="section-number" style="background: rgba(110,231,183,0.15); color: var(--accent-green);">9</span>
+        Hook System (Event-Driven Extension)
+      </h2>
+
+      <h3>9.1 Internal Hook System</h3>
+
+      <pre><code><span class="fn">registerInternalHook</span>(eventKey, handler)
+<span class="fn">triggerInternalHook</span>(event)</code></pre>
+
+      <p><strong>Event Types:</strong></p>
+      <ul>
+        <li><code>command</code> &mdash; CLIコマンド実行イベント</li>
+        <li><code>session</code> &mdash; セッションライフサイクルイベント</li>
+        <li><code>agent</code> &mdash; エージェントイベント（bootstrapを含む）</li>
+        <li><code>gateway</code> &mdash; ゲートウェイイベント</li>
+      </ul>
+
+      <p><strong>Two-level Matching:</strong> type-based マッチングと type+action ベースの精密マッチングの2段階。</p>
+
+      <h3>9.2 Hook Metadata</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>always</code></td>
+              <td>常に実行するかどうか</td>
+            </tr>
+            <tr>
+              <td><code>hookKey</code></td>
+              <td>一意のフック識別子</td>
+            </tr>
+            <tr>
+              <td><code>events</code></td>
+              <td>対象イベント一覧</td>
+            </tr>
+            <tr>
+              <td><code>os</code></td>
+              <td>対象OS</td>
+            </tr>
+            <tr>
+              <td><code>requires.bins</code></td>
+              <td>必要なバイナリ</td>
+            </tr>
+            <tr>
+              <td><code>requires.anyBins</code></td>
+              <td>いずれか1つあればよいバイナリ</td>
+            </tr>
+            <tr>
+              <td><code>requires.env</code></td>
+              <td>必要な環境変数</td>
+            </tr>
+            <tr>
+              <td><code>requires.config</code></td>
+              <td>必要な設定値</td>
+            </tr>
+            <tr>
+              <td><code>install</code></td>
+              <td>インストール仕様</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-title">Self-Describing Hooks</div>
+        <p>フックは自身の前提条件を宣言するため、フックシステムは実行前に環境要件を自動チェックし、不足がある場合はスキップまたはインストール提案できます。</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 10: Model Fallback -->
+      <!-- ============================================================ -->
+      <h2 id="sec10">
+        <span class="section-number" style="background: rgba(251,191,36,0.15); color: var(--accent-orange);">10</span>
+        Model Fallback and Fault Tolerance
+      </h2>
+
+      <h3>10.1 Auth Profile Rotation</h3>
+
+      <pre><code><span class="fn">markAuthProfileGood</span>(profile)     <span class="cm">// 正常マーク</span>
+<span class="fn">markAuthProfileFailure</span>(profile)  <span class="cm">// 失敗マーク</span>
+<span class="fn">markAuthProfileCooldown</span>(profile) <span class="cm">// クールダウンマーク</span>
+<span class="fn">resolveAuthProfileOrder</span>()        <span class="cm">// 最適な順序で自動ローテーション</span></code></pre>
+
+      <h3>10.2 Model Fallback</h3>
+
+      <ul>
+        <li>画像処理専用の代替モデル</li>
+        <li>allowlist-onlyの安全な切り替え</li>
+        <li>中断検出によるフォールバックトリガー</li>
+      </ul>
+
+      <h3>10.3 Context Window Guard</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Threshold</th>
+              <th>Remaining Tokens</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag orange">shouldWarn</span></td>
+              <td>&lt; 32,000</td>
+              <td>警告表示、コンパクション検討</td>
+            </tr>
+            <tr>
+              <td><span class="tag pink">shouldBlock</span></td>
+              <td>&lt; 16,000</td>
+              <td>新規ツール実行をブロック</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 11: Design Patterns -->
+      <!-- ============================================================ -->
+      <h2 id="sec11">
+        <span class="section-number" style="background: rgba(108,138,255,0.15); color: var(--accent-blue);">11</span>
+        Design Patterns for Self-Growing Agents
+      </h2>
+
+      <p>分析から抽出した7つの実践的デザインパターン。それぞれ Problem / Solution / 実装ガイドラインを含みます。</p>
+
+      <div class="pattern-grid">
+        <div class="pattern-card">
+          <div class="pattern-name"><span class="tag blue">Pattern 1</span> Hierarchical Tool Registry</div>
+          <div class="pattern-where">Core &rarr; SDK &rarr; Plugin &rarr; Policy Filter &rarr; Owner Guard</div>
+          <div class="pattern-desc">多層のツール登録・解決により、段階的な拡張と安全なアクセス制御を両立。衝突検出で名前空間の安全性を確保。</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name"><span class="tag purple">Pattern 2</span> Delta-Based Memory Sync</div>
+          <div class="pattern-where">File watcher &rarr; dirty flag &rarr; delta tracking &rarr; debounce &rarr; diff sync</div>
+          <div class="pattern-desc">フルリインデックスを避け、変更分のみを同期。ファイル監視 &rarr; dirty flag &rarr; 閾値判定 &rarr; 差分同期 &rarr; embedding + cache &rarr; index更新。</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name"><span class="tag cyan">Pattern 3</span> Self-Diagnosis Repair Cycle</div>
+          <div class="pattern-where">Diagnose &rarr; Propose &rarr; User Approval &rarr; Auto-Repair &rarr; Persist</div>
+          <div class="pattern-desc">12モジュールの診断 &rarr; 問題検出 &rarr; 修復提案 &rarr; ユーザー承認 &rarr; 自動修復 &rarr; 設定永続化 &rarr; バリデーション。</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name"><span class="tag green">Pattern 4</span> Event-Driven Hook System</div>
+          <div class="pattern-where">Event firing &rarr; type handlers + action handlers</div>
+          <div class="pattern-desc">すべてをイベントとして発火し、フックで拡張。Mapベースのシンプルな構造で、type-based + action-based の2段階マッチング。</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name"><span class="tag orange">Pattern 5</span> Compaction (Selective Forgetting)</div>
+          <div class="pattern-where">Conversation &rarr; token estimation &rarr; chunk split &rarr; LLM summary</div>
+          <div class="pattern-desc">会話 &rarr; トークン見積 &rarr; 閾値チェック &rarr; チャンク分割 &rarr; LLM要約 &rarr; マージ &rarr; 圧縮された履歴で継続。重要情報（判断・TODO・制約）を保存。</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name"><span class="tag pink">Pattern 6</span> Progressive Capability Acquisition</div>
+          <div class="pattern-where">Boot: bootstrap &rarr; hooks &rarr; skill scan &rarr; memory warm</div>
+          <div class="pattern-desc"><strong>Boot:</strong> workspace bootstrap &rarr; bootstrap hooks &rarr; skill scan &rarr; memory warm。<strong>Runtime:</strong> on-demand skill loading, plugin tools, hook extension, memory accumulation。</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name"><span class="tag cyan">Pattern 7</span> Multi-Stage Fallback</div>
+          <div class="pattern-where">Primary &rarr; auth rotation &rarr; fallback provider &rarr; error notification</div>
+          <div class="pattern-desc">Primary &rarr; auth rotation (cooldown) &rarr; fallback provider (OpenAI &rarr; Gemini &rarr; Local) &rarr; batch disable &rarr; error notification + partial operation。</div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Section 12: Architecture Lessons -->
+      <!-- ============================================================ -->
+      <h2 id="sec12">
+        <span class="section-number" style="background: rgba(167,139,250,0.15); color: var(--accent-purple);">12</span>
+        Architecture Lessons Summary
+      </h2>
+
+      <p>自己成長型エージェントを構築するための10の原則:</p>
+
+      <ol class="styled-list">
+        <li><strong>ツールは疎結合に登録せよ</strong> &mdash; レジストリパターンにより、コアを変更せずにツールを追加・削除可能にする。</li>
+        <li><strong>メモリは2層構造で</strong> &mdash; 短期（コンテキストウィンドウ）+ 長期（ベクトルDB）。コンパクションが両者を橋渡しする。</li>
+        <li><strong>フィードバックループを閉じよ</strong> &mdash; ツール結果 &rarr; LLM &rarr; 次のツール。Result Guardで欠損を補う。</li>
+        <li><strong>自己診断を組み込め</strong> &mdash; Doctorパターンで、問題検出 &rarr; 提案 &rarr; 自動修復のサイクルを回す。</li>
+        <li><strong>設定は進化するものと仮定せよ</strong> &mdash; スキーマ検証 + レガシーマイグレーション + ランタイムオーバーライドの3層構造。</li>
+        <li><strong>多段階フォールトトレランス</strong> &mdash; 単一障害点を作らない。auth rotation &rarr; provider fallback &rarr; graceful degradation。</li>
+        <li><strong>戦略的コンテキスト管理</strong> &mdash; プルーニング + コンパクション + 選択的メモリ検索で、有限なコンテキストを最大活用。</li>
+        <li><strong>イベント駆動で拡張せよ</strong> &mdash; すべてをイベントとして発火し、フックで拡張可能にする。</li>
+        <li><strong>柔軟なブートストラップ</strong> &mdash; ワークスペースファイル + テンプレート + フックオーバーライドで、環境に応じた初期化。</li>
+        <li><strong>段階的に権限を付与せよ</strong> &mdash; ツールプロファイル: minimal &rarr; coding &rarr; messaging &rarr; full で段階的に権限拡大。</li>
+      </ol>
+
+      <div class="callout info">
+        <div class="callout-title">Core Philosophy</div>
+        <p>これらの原則は「<strong>エージェントは最初から完成している必要はない</strong>」という設計思想に基づいています。環境に応じて段階的に成長し、失敗から学び、新しい能力を獲得できるシステムが最も堅牢です。</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Appendix A: Key Files -->
+      <!-- ============================================================ -->
+      <h2 id="appendix-a">
+        <span class="section-number" style="background: rgba(103,232,249,0.15); color: var(--accent-cyan);">A</span>
+        Appendix A: Key Files
+      </h2>
+
+      <details>
+        <summary>Key Files Reference Table (click to expand)</summary>
+        <div class="details-content">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Area</th>
+                  <th>Path</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="tag blue">Tool</span></td>
+                  <td><code>src/agents/openclaw-tools.ts</code></td>
+                  <td>Core tool definitions &amp; createOpenClawTools()</td>
+                </tr>
+                <tr>
+                  <td><span class="tag blue">Tool</span></td>
+                  <td><code>src/agents/tool-execution.ts</code></td>
+                  <td>Tool execution engine, event flow</td>
+                </tr>
+                <tr>
+                  <td><span class="tag blue">Tool</span></td>
+                  <td><code>src/agents/tool-policy.ts</code></td>
+                  <td>Profile-based tool policy, group expansion</td>
+                </tr>
+                <tr>
+                  <td><span class="tag blue">Tool</span></td>
+                  <td><code>src/agents/tool-result-guard.ts</code></td>
+                  <td>Session tool result guard, missing result synthesis</td>
+                </tr>
+                <tr>
+                  <td><span class="tag purple">Plugin</span></td>
+                  <td><code>src/plugins/registry.ts</code></td>
+                  <td>Plugin registry, tool registration, collision detection</td>
+                </tr>
+                <tr>
+                  <td><span class="tag cyan">Memory</span></td>
+                  <td><code>src/memory/manager.ts</code></td>
+                  <td>MemoryIndexManager (2,355 lines) - core memory system</td>
+                </tr>
+                <tr>
+                  <td><span class="tag cyan">Memory</span></td>
+                  <td><code>src/memory/embedding.ts</code></td>
+                  <td>Embedding providers (OpenAI, Gemini, Local)</td>
+                </tr>
+                <tr>
+                  <td><span class="tag cyan">Memory</span></td>
+                  <td><code>src/memory/search.ts</code></td>
+                  <td>Hybrid search (BM25 + vector)</td>
+                </tr>
+                <tr>
+                  <td><span class="tag green">Onboard</span></td>
+                  <td><code>src/commands/onboard.ts</code></td>
+                  <td>Interactive onboarding flow</td>
+                </tr>
+                <tr>
+                  <td><span class="tag green">Onboard</span></td>
+                  <td><code>src/agents/bootstrap.ts</code></td>
+                  <td>Workspace bootstrap files &amp; hook overrides</td>
+                </tr>
+                <tr>
+                  <td><span class="tag orange">Config</span></td>
+                  <td><code>src/infra/config.ts</code></td>
+                  <td>Config IO, loading, migration, validation</td>
+                </tr>
+                <tr>
+                  <td><span class="tag orange">Config</span></td>
+                  <td><code>src/infra/config-schema.ts</code></td>
+                  <td>OpenClawSchema (Zod) definition</td>
+                </tr>
+                <tr>
+                  <td><span class="tag pink">Doctor</span></td>
+                  <td><code>src/commands/doctor.ts</code></td>
+                  <td>Doctor command entry point</td>
+                </tr>
+                <tr>
+                  <td><span class="tag pink">Doctor</span></td>
+                  <td><code>src/commands/doctor-*.ts</code></td>
+                  <td>12 diagnostic modules</td>
+                </tr>
+                <tr>
+                  <td><span class="tag blue">Media</span></td>
+                  <td><code>src/media/</code></td>
+                  <td>Media pipeline (store, extract, process)</td>
+                </tr>
+                <tr>
+                  <td><span class="tag purple">Skill</span></td>
+                  <td><code>src/skills/loader.ts</code></td>
+                  <td>Skill loading from multiple sources</td>
+                </tr>
+                <tr>
+                  <td><span class="tag purple">Skill</span></td>
+                  <td><code>src/skills/sync.ts</code></td>
+                  <td>Skill sync to workspace</td>
+                </tr>
+                <tr>
+                  <td><span class="tag green">Hook</span></td>
+                  <td><code>src/hooks/internal.ts</code></td>
+                  <td>Internal hook registry &amp; trigger</td>
+                </tr>
+                <tr>
+                  <td><span class="tag green">Hook</span></td>
+                  <td><code>src/hooks/metadata.ts</code></td>
+                  <td>Hook metadata schema (requires, events, os)</td>
+                </tr>
+                <tr>
+                  <td><span class="tag orange">Fallback</span></td>
+                  <td><code>src/infra/auth-profile.ts</code></td>
+                  <td>Auth profile rotation, cooldown</td>
+                </tr>
+                <tr>
+                  <td><span class="tag orange">Fallback</span></td>
+                  <td><code>src/agents/model-fallback.ts</code></td>
+                  <td>Model fallback logic, context window guard</td>
+                </tr>
+                <tr>
+                  <td><span class="tag cyan">Compaction</span></td>
+                  <td><code>src/agents/compaction.ts</code></td>
+                  <td>Context compaction (chunk, summarize, merge)</td>
+                </tr>
+                <tr>
+                  <td><span class="tag cyan">Pruning</span></td>
+                  <td><code>src/agents/context-pruning.ts</code></td>
+                  <td>Tool result pruning predicates</td>
+                </tr>
+                <tr>
+                  <td><span class="tag blue">Prompt</span></td>
+                  <td><code>src/agents/system-prompt.ts</code></td>
+                  <td>System prompt building (memory, skills sections)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <div class="section-divider"></div>
+
+      <!-- ============================================================ -->
+      <!-- Appendix B: Full Growth Cycle Diagram -->
+      <!-- ============================================================ -->
+      <h2 id="appendix-b">
+        <span class="section-number" style="background: rgba(110,231,183,0.15); color: var(--accent-green);">B</span>
+        Appendix B: Full Growth Cycle Diagram
+      </h2>
+
+      <details open>
+        <summary>Complete Self-Growth Cycle (click to collapse)</summary>
+        <div class="details-content">
+          <div class="diagram">
+=== CORE GROWTH CYCLE ===
+
+  +------------------+       +------------------+       +-------------------+
+  |    Bootstrap     |       |   Dialog (LLM)   |       | Tool Execution    |
+  |                  |       |                   |       |                   |
+  |  workspace files |------>| system prompt     |------>| exec/read/write   |
+  |  bootstrap hooks |       | tool selection    |       | search/message    |
+  |  skill scan      |       | response gen      |       | browser/image     |
+  |  memory warm     |       |                   |       |                   |
+  +------------------+       +--------+----------+       +---------+---------+
+                                      ^                            |
+                                      |                            v
+  +------------------+       +--------+----------+       +---------+---------+
+  |    Compaction    |       | Memory Search     |       | Result Feedback   |
+  |                  |       | / Update (RAG)    |       |                   |
+  |  chunk split     |<------| vector search     |<------| sanitize          |
+  |  LLM summary    |       | keyword search    |       | transform         |
+  |  merge          |       | hybrid merge      |       | guard             |
+  |  preserve keys  |       | delta sync        |       | persist           |
+  +------------------+       +-------------------+       +-------------------+
+          |
+          v
+  +------------------+
+  | Session          |
+  | Persistence      |
+  |                  |
+  | transcript.jsonl |--- Next boot: search past knowledge
+  | tool results     |
+  | agent events     |
+  +------------------+
+
+
+=== PERIODIC MAINTENANCE ===
+
+  +------------------+       +------------------+       +-------------------+
+  |     Doctor       |------>| Problem Detection|------>|   Auto-Repair     |
+  |  (12 modules)    |       |                  |       |                   |
+  |  UI / Auth /     |       | config drift     |       | fix + persist     |
+  |  Gateway / State |       | missing deps     |       | propose growth    |
+  |  Security / etc  |       | broken state     |       | user approval     |
+  +------------------+       +------------------+       +-------------------+
+
+
+=== CAPABILITY EXTENSION ===
+
+  +------------------+   +-------------------+   +------------------+
+  |  Plugin Add      |   |  Skill Install    |   | Hook Register    |
+  |                  |   |                   |   |                  |
+  | registerTool()   |   | syncToWorkspace() |   | registerHook()   |
+  | resolve + merge  |   | load SKILL.md     |   | event matching   |
+  | collision detect |   | on-demand inject  |   | type + action    |
+  +------------------+   +-------------------+   +------------------+
+          |                       |                       |
+          +----------+------------+-----------+-----------+
+                     |                        |
+                     v                        v
+              Agent gains new            Agent gains new
+              tools at runtime           behaviors at runtime
+          </div>
+        </div>
+      </details>
+
+      <!-- Footer -->
+      <footer class="page-footer">
+        OpenClaw Architecture Analysis Reports &mdash; Based on commit <code>328b69be1</code>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Back to Top -->
+  <button class="back-to-top" id="backToTop">&uarr;</button>
+
+  <!-- Scripts -->
+  <script>
+    // Back to Top
+    const backToTop = document.getElementById('backToTop');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 400) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
+    });
+    backToTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // TOC Active Highlighting
+    const tocLinks = document.querySelectorAll('.sidebar .toc-list a');
+    const sections = [];
+    tocLinks.forEach(link => {
+      const id = link.getAttribute('href').replace('#', '');
+      const el = document.getElementById(id);
+      if (el) sections.push({ id, el, link });
+    });
+
+    function updateTocHighlight() {
+      const scrollPos = window.scrollY + 100;
+      let current = sections[0];
+      for (const section of sections) {
+        if (section.el.offsetTop <= scrollPos) {
+          current = section;
+        }
+      }
+      tocLinks.forEach(l => l.classList.remove('active'));
+      if (current) current.link.classList.add('active');
+    }
+
+    window.addEventListener('scroll', updateTocHighlight);
+    updateTocHighlight();
+
+    // Sidebar Toggle (mobile)
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+
+    // Close sidebar when clicking a link (mobile)
+    tocLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 1024) {
+          sidebar.classList.remove('open');
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

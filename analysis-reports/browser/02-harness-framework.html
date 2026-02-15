@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harness &amp; Framework Structure - OpenClaw Analysis</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <span class="logo">OpenClaw Analysis</span>
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">&#9776;</button>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="01-memory-strategy.html">Memory</a>
+      <a href="02-harness-framework.html" class="active">Harness</a>
+      <a href="03-self-growth-mechanisms.html">Growth</a>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+
+    <!-- Sidebar TOC -->
+    <aside class="sidebar" id="sidebar">
+      <div class="toc-title">Table of Contents</div>
+      <ul class="toc-list">
+        <li><a href="#summary">Summary</a></li>
+        <li><a href="#section-1">1. CLI Structure and Command System</a></li>
+        <li class="sub"><a href="#sec-1-1">1.1 Entry Point and Bootstrap</a></li>
+        <li class="sub"><a href="#sec-1-2">1.2 Command Registration</a></li>
+        <li class="sub"><a href="#sec-1-3">1.3 Dependency Injection</a></li>
+        <li class="sub"><a href="#sec-1-4">1.4 Runtime Environment</a></li>
+        <li><a href="#section-2">2. Gateway Architecture</a></li>
+        <li class="sub"><a href="#sec-2-1">2.1 Startup Flow</a></li>
+        <li class="sub"><a href="#sec-2-2">2.2 Gateway Loop</a></li>
+        <li class="sub"><a href="#sec-2-3">2.3 Server Implementation</a></li>
+        <li class="sub"><a href="#sec-2-4">2.4 Architecture Diagram</a></li>
+        <li><a href="#section-3">3. Agent Lifecycle Management</a></li>
+        <li class="sub"><a href="#sec-3-1">3.1 Execution Flow</a></li>
+        <li class="sub"><a href="#sec-3-2">3.2 Embedded Pi Agent</a></li>
+        <li class="sub"><a href="#sec-3-3">3.3 Streaming Events</a></li>
+        <li class="sub"><a href="#sec-3-4">3.4 Model Fallback</a></li>
+        <li class="sub"><a href="#sec-3-5">3.5 Agent Event System</a></li>
+        <li><a href="#section-4">4. Message Routing</a></li>
+        <li class="sub"><a href="#sec-4-1">4.1 Route Resolution</a></li>
+        <li class="sub"><a href="#sec-4-2">4.2 Session Key Structure</a></li>
+        <li class="sub"><a href="#sec-4-3">4.3 Routing Data Flow</a></li>
+        <li><a href="#section-5">5. Plugin/Extension System</a></li>
+        <li class="sub"><a href="#sec-5-1">5.1 Plugin Architecture</a></li>
+        <li class="sub"><a href="#sec-5-2">5.2 PluginRegistry</a></li>
+        <li class="sub"><a href="#sec-5-3">5.3 Registration API</a></li>
+        <li class="sub"><a href="#sec-5-4">5.4 Example Plugin</a></li>
+        <li class="sub"><a href="#sec-5-5">5.5 Channel Plugin Interface</a></li>
+        <li class="sub"><a href="#sec-5-6">5.6 Channel Manager</a></li>
+        <li><a href="#section-6">6. Provider Pattern</a></li>
+        <li class="sub"><a href="#sec-6-1">6.1 Provider Structure</a></li>
+        <li class="sub"><a href="#sec-6-2">6.2 Tool Definition</a></li>
+        <li class="sub"><a href="#sec-6-3">6.3 System Prompt</a></li>
+        <li><a href="#section-7">7. Concurrency Control</a></li>
+        <li class="sub"><a href="#sec-7-1">7.1 Command Queue</a></li>
+        <li class="sub"><a href="#sec-7-2">7.2 Dual Queue Strategy</a></li>
+        <li><a href="#section-8">8. Error Handling</a></li>
+        <li class="sub"><a href="#sec-8-1">8.1 Hierarchical Error Handling</a></li>
+        <li class="sub"><a href="#sec-8-2">8.2 Failover Classification</a></li>
+        <li class="sub"><a href="#sec-8-3">8.3 Auth Profile Rotation</a></li>
+        <li class="sub"><a href="#sec-8-4">8.4 Boot File</a></li>
+        <li><a href="#section-9">9. Hook System</a></li>
+        <li><a href="#section-10">10. Self-Growing Agent Implications</a></li>
+        <li><a href="#appendix">Appendix: Key File Paths</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <h1>Harness &amp; Framework Structure Analysis Report</h1>
+      <p>OpenClawのハーネスおよびフレームワーク構造に関する包括的な技術分析レポート</p>
+
+      <!-- ==================== Summary ==================== -->
+      <section id="summary">
+        <div class="summary-box">
+          <div class="summary-title">Executive Summary</div>
+          <p>
+            OpenClawは<strong>マルチチャネルAIエージェント実行プラットフォーム（ハーネス）</strong>です。
+            CLIによるワンショット実行からゲートウェイサーバーによる永続的マルチチャネルエージェントまで、
+            幅広い実行モードを提供します。
+          </p>
+          <p style="margin-top: 0.75rem;"><strong>主要な設計原則：</strong></p>
+          <ul>
+            <li><strong>プラグインベースの拡張性</strong> -- チャネル、ツール、プロバイダ、フックをすべてプラグインとして登録可能</li>
+            <li><strong>レーン型並行制御</strong> -- セッションレベルとグローバルレベルのコマンドキューによる安全な直列化</li>
+            <li><strong>依存性注入（DI）パターン</strong> -- <code>createDefaultDeps()</code> による疎結合設計</li>
+            <li><strong>遅延ロード</strong> -- サブコマンドとプラグインの遅延インポートによる高速起動</li>
+            <li><strong>フェイルオーバーサポート</strong> -- 認証プロファイルローテーションとモデルフォールバックチェーン</li>
+          </ul>
+        </div>
+
+        <!-- Key Stats -->
+        <div class="stat-row">
+          <div class="stat-box">
+            <div class="stat-value">7</div>
+            <div class="stat-label">Route Priority Levels</div>
+          </div>
+          <div class="stat-box purple">
+            <div class="stat-value">4</div>
+            <div class="stat-label">Command Lanes</div>
+          </div>
+          <div class="stat-box cyan">
+            <div class="stat-value">14</div>
+            <div class="stat-label">Channel Adapters</div>
+          </div>
+          <div class="stat-box green">
+            <div class="stat-value">10</div>
+            <div class="stat-label">Server Init Steps</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 1: CLI Structure ==================== -->
+      <section id="section-1">
+        <h2>
+          <span class="section-number" style="background: rgba(108,138,255,0.15); color: var(--accent-blue);">1</span>
+          CLI Structure and Command System
+        </h2>
+
+        <h3 id="sec-1-1">1.1 Entry Point and Bootstrap</h3>
+        <p>OpenClawのブートチェーンは以下のファイルを順に通過します：</p>
+
+        <div class="flow-diagram">
+          <div class="flow-step highlight">openclaw.mjs</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">src/entry.ts</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">src/cli/run-main.ts</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step highlight">src/cli/program.ts</div>
+        </div>
+
+        <div class="callout info">
+          <div class="callout-title">entry.ts (1-171)</div>
+          <p>CLIエントリポイント。プロセスタイトル設定、Node.js警告のrespawnによる抑制、CLIプロファイル解析、<code>run-main.ts</code> の動的インポートを処理します。</p>
+        </div>
+
+        <div class="callout tip">
+          <div class="callout-title">run-main.ts (27-72)</div>
+          <p><code>runCli()</code> 関数 -- <code>.env</code> のロード、ランタイム互換性チェック（Node 22+）、高速ルーティング（<code>tryRouteCli</code>）、コンソールキャプチャ、Commanderプログラムのビルド・パース、<code>registerSubCliByName()</code> による遅延サブコマンド登録。</p>
+        </div>
+
+        <h3 id="sec-1-2">1.2 Command Registration Architecture</h3>
+        <p>コマンド登録は多層的なアーキテクチャで構成されています：</p>
+
+        <div class="flow-diagram">
+          <div class="flow-step highlight">build-program.ts</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">command-registry.ts <span class="tag blue" style="margin-left: 0.5rem;">Core Commands</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">register.subclis.ts <span class="tag purple" style="margin-left: 0.5rem;">Lazy-loaded</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">plugins/cli.ts <span class="tag cyan" style="margin-left: 0.5rem;">Plugin CLI</span></div>
+        </div>
+
+        <div class="callout info">
+          <div class="callout-title">Lazy Load Pattern</div>
+          <p>
+            <code>SubCliEntry</code> 配列で動的インポートを定義 -- gateway, daemon, logs, system, models, acp など。
+            これにより <code>openclaw status</code> を実行する際にgatewayモジュールをロードする必要がありません。
+          </p>
+        </div>
+
+        <h3 id="sec-1-3">1.3 Dependency Injection Pattern</h3>
+        <p><code>CliDeps</code> 型がファクトリ関数群を定義し、DIパターンを実現します：</p>
+
+        <pre><code><span class="kw">type</span> <span class="type">CliDeps</span> = {
+  <span class="fn">sendMessageWhatsApp</span>: <span class="type">SendFn</span>;
+  <span class="fn">sendMessageTelegram</span>: <span class="type">SendFn</span>;
+  <span class="fn">sendMessageDiscord</span>:  <span class="type">SendFn</span>;
+  <span class="fn">sendMessageSlack</span>:    <span class="type">SendFn</span>;
+  <span class="fn">sendMessageSignal</span>:   <span class="type">SendFn</span>;
+  <span class="fn">sendMessageIMessage</span>: <span class="type">SendFn</span>;
+};
+
+<span class="cm">// Bundle implementations</span>
+<span class="fn">createDefaultDeps</span>()    <span class="cm">// production deps</span>
+<span class="fn">createOutboundSendDeps</span>() <span class="cm">// remapped for outbound</span>
+<span class="cm">// Easy mock replacement in tests</span></code></pre>
+
+        <div class="callout tip">
+          <div class="callout-title">Design Point</div>
+          <p><code>createDefaultDeps()</code> が本番用の実装をバンドルし、<code>createOutboundSendDeps()</code> がアウトバウンド用にリマップします。テストではモックへの置換が容易です。</p>
+        </div>
+
+        <h3 id="sec-1-4">1.4 Runtime Environment Abstraction</h3>
+        <p>すべてのコマンドは <code>RuntimeEnv</code> 引数を受け取り、環境を抽象化します：</p>
+
+        <pre><code><span class="kw">type</span> <span class="type">RuntimeEnv</span> = {
+  <span class="fn">log</span>:   (...args: <span class="type">unknown</span>[]) =&gt; <span class="type">void</span>;
+  <span class="fn">error</span>: (...args: <span class="type">unknown</span>[]) =&gt; <span class="type">void</span>;
+  <span class="fn">exit</span>:  (code: <span class="type">number</span>) =&gt; <span class="type">never</span>;
+};
+
+<span class="cm">// defaultRuntime has safe terminal state restoration</span></code></pre>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 2: Gateway Architecture ==================== -->
+      <section id="section-2">
+        <h2>
+          <span class="section-number" style="background: rgba(167,139,250,0.15); color: var(--accent-purple);">2</span>
+          Gateway Architecture
+        </h2>
+
+        <h3 id="sec-2-1">2.1 Startup Flow</h3>
+        <p>ゲートウェイの起動は以下の多段フローを通過します：</p>
+
+        <div class="flow-diagram">
+          <div class="flow-step highlight">openclaw gateway run</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">src/cli/gateway-cli/run.ts:54 <span class="tag purple" style="margin-left: 0.5rem;">runGatewayCommand</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">run-loop.ts <span class="tag blue" style="margin-left: 0.5rem;">runGatewayLoop</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">server.impl.ts <span class="tag cyan" style="margin-left: 0.5rem;">startGatewayServer</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">server-startup.ts <span class="tag green" style="margin-left: 0.5rem;">startGatewaySidecars</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">server-channels.ts <span class="tag orange" style="margin-left: 0.5rem;">createChannelManager</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">server-chat.ts <span class="tag pink" style="margin-left: 0.5rem;">createAgentEventHandler</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step highlight">server-ws-runtime.ts <span class="tag blue" style="margin-left: 0.5rem;">WebSocket</span></div>
+        </div>
+
+        <h3 id="sec-2-2">2.2 Gateway Loop (Lifecycle Management)</h3>
+        <p><code>runGatewayLoop()</code> はリスタート可能なサーバーループを管理します：</p>
+
+        <div class="diagram">[Lock acquisition] ──&gt; [Server start] ──&gt; [Signal wait]
+       │                                          │
+       │    SIGTERM / SIGINT ──&gt; Graceful shutdown (5s timeout)
+       │    SIGUSR1 ──────────&gt; Restart (close and re-start)
+       │                                          │
+       └──────────&lt; restart loop &lt;────────────────┘</div>
+
+        <div class="callout warning">
+          <div class="callout-title">Key Design Points</div>
+          <p>
+            <strong>Gateway Lock:</strong> ファイルロックによる排他制御<br>
+            <strong>SIGUSR1 Restart:</strong> macOSアプリからのリスタートサポート<br>
+            <strong>5秒タイムアウト:</strong> グレースフルシャットダウンの上限時間
+          </p>
+        </div>
+
+        <h3 id="sec-2-3">2.3 Server Implementation</h3>
+        <p><code>startGatewayServer()</code> の初期化は10ステップで構成されます：</p>
+
+        <ol class="styled-list">
+          <li><strong>Legacy config migration</strong> -- 旧設定の移行処理</li>
+          <li><strong>Plugin loading</strong> -- プラグインの読み込みと初期化</li>
+          <li><strong>Channel manager creation</strong> -- チャネルマネージャーの構築</li>
+          <li><strong>Agent event handler</strong> -- エージェントイベントハンドラの設定</li>
+          <li><strong>Node registry</strong> -- モバイル/デスクトップノードの登録</li>
+          <li><strong>WebSocket connections</strong> -- WebSocket接続の確立</li>
+          <li><strong>Sidecar startup</strong> -- ブラウザ制御、Gmail監視、フック、チャネル</li>
+          <li><strong>Discovery / Tailscale</strong> -- ネットワーク探索</li>
+          <li><strong>Cron service</strong> -- 定期実行サービス</li>
+          <li><strong>Health check</strong> -- ヘルスチェック機構</li>
+        </ol>
+
+        <h3 id="sec-2-4">2.4 Gateway Architecture Diagram</h3>
+
+        <div class="diagram">                        ┌──────────────────────────────────────────┐
+                        │           Gateway Server                 │
+                        │                                          │
+                        │  ┌──────────────┐  ┌──────────────────┐  │
+                        │  │  WS Runtime   │  │  HTTP Endpoints  │  │
+                        │  └──────┬───────┘  └────────┬─────────┘  │
+                        │         │                    │            │
+                        │  ┌──────┴────────────────────┴─────────┐ │
+                        │  │       Agent Event Handler            │ │
+                        │  └──────────────┬──────────────────────┘ │
+                        │                 │                        │
+                        │  ┌──────────────┴──────────────────────┐ │
+                        │  │        Channel Manager              │ │
+                        │  └──────────────┬──────────────────────┘ │
+                        │                 │                        │
+                        │  ┌──────────────┴──────────────────────┐ │
+                        │  │        Plugin Registry              │ │
+                        │  └─────────────────────────────────────┘ │
+                        └────────────┬────────────┬────────────────┘
+                                     │            │
+              ┌──────────────────────┤            ├──────────────────────┐
+              │                      │            │                      │
+     ┌────────┴────────┐   ┌────────┴──────┐  ┌──┴───────────────┐     │
+     │  macOS App (WS)  │   │  iOS App (WS) │  │   Web UI (WS)   │     │
+     └─────────────────┘   └───────────────┘  └──────────────────┘     │
+                                                                       │
+                            ┌──────────────────────────────────────────┘
+                            │           Channel Plugins
+              ┌─────────────┼─────────────┬──────────────┐
+              │             │             │              │
+     ┌────────┴──┐  ┌──────┴───┐  ┌──────┴───┐  ┌──────┴────┐
+     │ Telegram  │  │ Discord  │  │  Slack   │  │ WhatsApp  │
+     └───────────┘  └──────────┘  └──────────┘  └───────────┘
+              ┌─────────────┬─────────────┐
+              │             │             │
+     ┌────────┴──┐  ┌──────┴───┐  ┌──────┴────┐
+     │  Signal   │  │ iMessage │  │ MS Teams  │
+     └───────────┘  └──────────┘  └───────────┘</div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 3: Agent Lifecycle ==================== -->
+      <section id="section-3">
+        <h2>
+          <span class="section-number" style="background: rgba(103,232,249,0.15); color: var(--accent-cyan);">3</span>
+          Agent Lifecycle Management
+        </h2>
+
+        <h3 id="sec-3-1">3.1 Agent Execution Flow</h3>
+        <p>エージェントの実行は以下のパイプラインを通過します：</p>
+
+        <div class="flow-diagram">
+          <div class="flow-step">Message receive</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">Routing</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step highlight">Session resolve</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step highlight">Agent execution</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">Response delivery</div>
+        </div>
+
+        <div class="callout info">
+          <div class="callout-title">agentCommand() - src/commands/agent.ts:64</div>
+          <p>
+            入力バリデーション、エージェントID解決、ワークスペース準備、モデル選択、スキルスナップショット、
+            セッション解決、モデルフォールバック実行、結果配信を統合的に処理します。
+          </p>
+        </div>
+
+        <h3 id="sec-3-2">3.2 Embedded Pi Agent (Main Runner)</h3>
+        <p><code>runEmbeddedPiAgent()</code> はメインランナーとして以下のステップを実行します：</p>
+
+        <div class="flow-diagram">
+          <div class="flow-step">resolveSessionLane</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">resolveGlobalLane</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step highlight">enqueueSession / Global</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">resolveModel</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">resolveContextWindow</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">resolveAuthProfile</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step highlight">runEmbeddedAttempt</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">subscribeEmbeddedPiSession</div>
+        </div>
+
+        <div class="callout tip">
+          <div class="callout-title">Key Design</div>
+          <p>
+            <strong>デュアルレーンキューイング</strong>（セッション + グローバル）、<strong>認証プロファイルローテーション</strong>（クールダウン付き）、
+            <strong>コンテキストウィンドウガード</strong>の3つが重要な設計ポイントです。
+          </p>
+        </div>
+
+        <h3 id="sec-3-3">3.3 Streaming Event Subscription</h3>
+        <p>ストリーミングイベントは以下の型で配信されます：</p>
+
+        <div class="pattern-grid">
+          <div class="pattern-card">
+            <div class="pattern-name">Message Events</div>
+            <div class="pattern-desc">
+              <code>message_start</code><br>
+              <code>message_update</code><br>
+              <code>message_end</code>
+            </div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">Tool Events</div>
+            <div class="pattern-desc">
+              <code>tool_execution_start</code><br>
+              <code>tool_execution_update</code><br>
+              <code>tool_execution_end</code>
+            </div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">Agent Events</div>
+            <div class="pattern-desc">
+              <code>agent_start</code><br>
+              <code>agent_end</code>
+            </div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">Compaction Events</div>
+            <div class="pattern-desc">
+              <code>auto_compaction_start</code><br>
+              <code>auto_compaction_end</code>
+            </div>
+          </div>
+        </div>
+
+        <h3 id="sec-3-4">3.4 Model Fallback</h3>
+        <p>モデルフォールバック戦略は階層的に構成されます：</p>
+
+        <div class="flow-diagram">
+          <div class="flow-step highlight">Primary Model</div>
+          <div class="flow-arrow">&#8595; classify FailoverError</div>
+          <div class="flow-step">Try Fallbacks List</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">Image-specific Model Candidates</div>
+          <div class="flow-arrow">&#8595; AbortError?</div>
+          <div class="flow-step" style="border-color: var(--accent-red);">AbortError Rethrow</div>
+        </div>
+
+        <h3 id="sec-3-5">3.5 Agent Event System</h3>
+
+        <pre><code><span class="kw">type</span> <span class="type">AgentEventPayload</span> = {
+  runId:      <span class="type">string</span>;
+  seq:        <span class="type">number</span>;    <span class="cm">// monotonic counter</span>
+  stream:     <span class="type">StreamEvent</span>;
+  ts:         <span class="type">number</span>;
+  data:       <span class="type">unknown</span>;
+  sessionKey: <span class="type">string</span>;
+};
+
+<span class="fn">emitAgentEvent</span>(payload);
+<span class="fn">onAgentEvent</span>(handler);
+<span class="fn">registerAgentRunContext</span>(runId, ctx);</code></pre>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 4: Message Routing ==================== -->
+      <section id="section-4">
+        <h2>
+          <span class="section-number" style="background: rgba(110,231,183,0.15); color: var(--accent-green);">4</span>
+          Message Routing
+        </h2>
+
+        <h3 id="sec-4-1">4.1 Route Resolution</h3>
+        <p><code>resolveAgentRoute()</code> は7段階の優先度でマッチングを行います：</p>
+
+        <div class="layer-stack">
+          <div class="layer layer-1">
+            <div class="layer-label">Priority 1 -- binding.peer</div>
+            <div class="layer-desc">DM/グループにバインドされたエージェント</div>
+          </div>
+          <div class="layer layer-2">
+            <div class="layer-label">Priority 2 -- binding.peer.parent</div>
+            <div class="layer-desc">スレッド親ピア</div>
+          </div>
+          <div class="layer layer-3">
+            <div class="layer-label">Priority 3 -- binding.guild</div>
+            <div class="layer-desc">Discord ギルドID</div>
+          </div>
+          <div class="layer layer-4">
+            <div class="layer-label">Priority 4 -- binding.team</div>
+            <div class="layer-desc">Slack チームID</div>
+          </div>
+          <div class="layer layer-5">
+            <div class="layer-label">Priority 5 -- binding.account</div>
+            <div class="layer-desc">チャネルアカウント</div>
+          </div>
+          <div class="layer layer-3">
+            <div class="layer-label">Priority 6 -- binding.channel</div>
+            <div class="layer-desc">ワイルドカードアカウント</div>
+          </div>
+          <div class="layer layer-1">
+            <div class="layer-label">Priority 7 -- default</div>
+            <div class="layer-desc">デフォルトエージェント</div>
+          </div>
+        </div>
+
+        <h3 id="sec-4-2">4.2 Session Key Structure</h3>
+
+        <pre><code><span class="cm">// Session Key Format</span>
+{agentId}:{channel}:{accountId}:{peerKind}:{peerId}
+
+<span class="cm">// DM scope options</span>
+<span class="str">"main"</span>                    <span class="cm">// single shared session</span>
+<span class="str">"per-peer"</span>                <span class="cm">// per-peer isolation</span>
+<span class="str">"per-channel-peer"</span>        <span class="cm">// per-channel + per-peer</span>
+<span class="str">"per-account-channel-peer"</span> <span class="cm">// full isolation</span></code></pre>
+
+        <h3 id="sec-4-3">4.3 Routing Data Flow</h3>
+
+        <div class="flow-diagram">
+          <div class="flow-step">Received Message</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">Channel Plugin <span class="tag cyan" style="margin-left: 0.5rem;">normalize + allowlist</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step highlight">resolveAgentRoute()</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step highlight">Agent Runner <span class="tag purple" style="margin-left: 0.5rem;">session resolve + model select + execute</span></div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">Channel Outbound <span class="tag green" style="margin-left: 0.5rem;">reply to original channel</span></div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 5: Plugin System ==================== -->
+      <section id="section-5">
+        <h2>
+          <span class="section-number" style="background: rgba(251,191,36,0.15); color: var(--accent-orange);">5</span>
+          Plugin / Extension System
+        </h2>
+
+        <h3 id="sec-5-1">5.1 Plugin Architecture</h3>
+        <p>OpenClawのプラグインシステムは <strong>jiti（Just-In-Time TypeScript）</strong> を活用し、<code>extensions/</code> 配下のTypeScriptファイルを直接実行します。</p>
+        <ul>
+          <li><strong>jiti:</strong> TypeScriptファイルの直接実行（ビルドステップ不要）</li>
+          <li><strong>openclaw/plugin-sdk:</strong> エイリアス解決によるSDKアクセス</li>
+          <li><strong>Config:</strong> 設定ファイルによるプラグインの有効/無効切り替え</li>
+        </ul>
+
+        <h3 id="sec-5-2">5.2 PluginRegistry Type</h3>
+        <p><code>PluginRegistry</code> は以下のスロットで構成されます：</p>
+
+        <div class="pattern-grid">
+          <div class="pattern-card">
+            <div class="pattern-name">plugins</div>
+            <div class="pattern-desc">登録済みプラグイン一覧</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">tools</div>
+            <div class="pattern-desc">エージェントが使用するツール</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">hooks</div>
+            <div class="pattern-desc">イベントフック</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">channels</div>
+            <div class="pattern-desc">チャネルプラグイン</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">providers</div>
+            <div class="pattern-desc">LLMプロバイダ</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">gatewayHandlers</div>
+            <div class="pattern-desc">ゲートウェイメソッドハンドラ</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">httpHandlers</div>
+            <div class="pattern-desc">HTTPリクエストハンドラ</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">httpRoutes</div>
+            <div class="pattern-desc">HTTPルート定義</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">cliRegistrars</div>
+            <div class="pattern-desc">CLIコマンド登録関数</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">services</div>
+            <div class="pattern-desc">バックグラウンドサービス</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">commands</div>
+            <div class="pattern-desc">カスタムコマンド</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">diagnostics</div>
+            <div class="pattern-desc">診断ハンドラ</div>
+          </div>
+        </div>
+
+        <h3 id="sec-5-3">5.3 Plugin Registration API</h3>
+
+        <pre><code><span class="cm">// Plugin Registration Methods</span>
+api.<span class="fn">registerChannel</span>(channelPlugin);
+api.<span class="fn">registerTool</span>(toolDefinition);
+api.<span class="fn">registerHook</span>(events, handler);
+api.<span class="fn">registerProvider</span>(providerConfig);
+api.<span class="fn">registerGatewayMethod</span>(name, handler);
+api.<span class="fn">registerHttpHandler</span>(route, handler);
+api.<span class="fn">registerCliCommand</span>(command);
+api.<span class="fn">registerService</span>(service);</code></pre>
+
+        <h3 id="sec-5-4">5.4 Example Plugin (Discord)</h3>
+        <p>典型的なプラグイン構造：</p>
+
+        <pre><code><span class="kw">export default</span> {
+  id:          <span class="str">"discord"</span>,
+  name:        <span class="str">"Discord Channel"</span>,
+  description: <span class="str">"Discord integration for OpenClaw"</span>,
+  configSchema: { <span class="cm">/* ... */</span> },
+
+  <span class="fn">register</span>(api) {
+    api.<span class="fn">registerChannel</span>({
+      <span class="cm">// channel adapters...</span>
+    });
+  }
+};</code></pre>
+
+        <h3 id="sec-5-5">5.5 Channel Plugin Interface</h3>
+        <p><code>ChannelPlugin</code> は以下の14種のアダプターで構成されます：</p>
+
+        <div class="file-tree">
+<span class="dir">ChannelPlugin</span>
+<span class="indent"></span><span class="file">Gateway</span> <span class="comment">-- ゲートウェイ接続管理</span>
+<span class="indent"></span><span class="file">Messaging</span> <span class="comment">-- メッセージ送受信</span>
+<span class="indent"></span><span class="file">Outbound</span> <span class="comment">-- アウトバウンド配信</span>
+<span class="indent"></span><span class="file">Streaming</span> <span class="comment">-- ストリーミング応答</span>
+<span class="indent"></span><span class="file">Status</span> <span class="comment">-- ステータス管理</span>
+<span class="indent"></span><span class="file">Config</span> <span class="comment">-- 設定スキーマ</span>
+<span class="indent"></span><span class="file">Auth</span> <span class="comment">-- 認証フロー</span>
+<span class="indent"></span><span class="file">Pairing</span> <span class="comment">-- ペアリング</span>
+<span class="indent"></span><span class="file">Setup</span> <span class="comment">-- 初期セットアップ</span>
+<span class="indent"></span><span class="file">Security</span> <span class="comment">-- セキュリティポリシー</span>
+<span class="indent"></span><span class="file">Mention</span> <span class="comment">-- メンション処理</span>
+<span class="indent"></span><span class="file">Threading</span> <span class="comment">-- スレッド管理</span>
+<span class="indent"></span><span class="file">Directory</span> <span class="comment">-- ユーザー/チャネル探索</span>
+<span class="indent"></span><span class="file">Onboarding</span> <span class="comment">-- オンボーディングフロー</span>
+        </div>
+
+        <h3 id="sec-5-6">5.6 Channel Manager</h3>
+        <p><code>createChannelManager()</code> はチャネルのライフサイクルを管理します：</p>
+
+        <pre><code><span class="fn">createChannelManager</span>() =&gt; {
+  <span class="fn">getRuntimeSnapshot</span>(): <span class="type">ChannelSnapshot</span>;
+  <span class="fn">startChannels</span>():      <span class="type">Promise</span>&lt;<span class="type">void</span>&gt;;
+  <span class="fn">startChannel</span>(id):     <span class="type">Promise</span>&lt;<span class="type">void</span>&gt;;
+  <span class="fn">stopChannel</span>(id):      <span class="type">Promise</span>&lt;<span class="type">void</span>&gt;;
+  <span class="fn">markChannelLoggedOut</span>(id): <span class="type">void</span>;
+}
+<span class="cm">// Per-account start/stop with AbortController management</span></code></pre>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 6: Provider Pattern ==================== -->
+      <section id="section-6">
+        <h2>
+          <span class="section-number" style="background: rgba(244,114,182,0.15); color: var(--accent-pink);">6</span>
+          Provider Pattern (LLM Abstraction)
+        </h2>
+
+        <h3 id="sec-6-1">6.1 Provider Structure</h3>
+        <p>プロバイダ関連のファイル階層：</p>
+
+        <div class="file-tree">
+<span class="dir">src/provider/</span>
+<span class="indent"></span><span class="file">defaults.ts</span> <span class="comment">-- デフォルト設定</span>
+<span class="indent"></span><span class="file">model-selection.ts</span> <span class="comment">-- モデル選択ロジック</span>
+<span class="indent"></span><span class="file">model-catalog.ts</span> <span class="comment">-- モデルカタログ</span>
+<span class="indent"></span><span class="file">model-auth.ts</span> <span class="comment">-- モデル認証</span>
+<span class="indent"></span><span class="file">model-fallback.ts</span> <span class="comment">-- フォールバック戦略</span>
+<span class="indent"></span><span class="file">auth-profiles.ts</span> <span class="comment">-- 認証プロファイル管理</span>
+<span class="indent"></span><span class="file">models-config.ts</span> <span class="comment">-- モデル設定</span>
+<span class="indent"></span><span class="dir">pi-embedded-runner/</span> <span class="comment">-- 組み込みランナー</span>
+        </div>
+
+        <h3 id="sec-6-2">6.2 Tool Definition and Registration</h3>
+        <p>ツールは複数のカテゴリに分類されます：</p>
+
+        <div class="card-grid">
+          <div class="card blue">
+            <div class="card-title">Core Tools (pi-coding-agent)</div>
+            <div class="card-desc">
+              <code>read</code>, <code>write</code>, <code>edit</code>,
+              <code>exec</code>, <code>process</code>, <code>apply_patch</code>
+            </div>
+          </div>
+          <div class="card purple">
+            <div class="card-title">OpenClaw-specific Tools</div>
+            <div class="card-desc">
+              <code>message send</code>, <code>session management</code>,
+              <code>camera</code>, <code>inter-agent communication</code>
+            </div>
+          </div>
+          <div class="card cyan">
+            <div class="card-title">Channel-specific Tools</div>
+            <div class="card-desc">
+              各チャネルプラグインが提供するチャネル固有のツール
+            </div>
+          </div>
+          <div class="card green">
+            <div class="card-title">Tool Policy</div>
+            <div class="card-desc">
+              <code>group policies</code>, <code>owner-only</code>,
+              <code>subagent policies</code>
+            </div>
+          </div>
+        </div>
+
+        <h3 id="sec-6-3">6.3 System Prompt Construction</h3>
+        <p>システムプロンプトは複数のセクションから構築されます：</p>
+
+        <div class="pattern-grid">
+          <div class="pattern-card">
+            <div class="pattern-name">Skills</div>
+            <div class="pattern-desc">利用可能なスキルの定義</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">Memory Recall</div>
+            <div class="pattern-desc">関連メモリの呼び出し</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">User Identity</div>
+            <div class="pattern-desc">ユーザー識別情報</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">Current Date/Time</div>
+            <div class="pattern-desc">現在の日時情報</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">Tooling</div>
+            <div class="pattern-desc">利用可能なツール一覧</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">Workspace</div>
+            <div class="pattern-desc">ワークスペース情報</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">Runtime</div>
+            <div class="pattern-desc">ランタイム環境情報</div>
+          </div>
+        </div>
+
+        <div class="callout info">
+          <div class="callout-title">PromptMode</div>
+          <p>
+            <span class="tag blue">full</span> -- 完全なプロンプト（メインエージェント）<br>
+            <span class="tag purple">minimal</span> -- 最小限のプロンプト（サブエージェント）<br>
+            <span class="tag cyan">none</span> -- プロンプトなし
+          </p>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 7: Concurrency Control ==================== -->
+      <section id="section-7">
+        <h2>
+          <span class="section-number" style="background: rgba(108,138,255,0.15); color: var(--accent-blue);">7</span>
+          Concurrency Control and Lane Mechanism
+        </h2>
+
+        <h3 id="sec-7-1">7.1 Command Queue</h3>
+
+        <pre><code><span class="kw">type</span> <span class="type">LaneState</span> = {
+  lane:          <span class="type">CommandLane</span>;
+  queue:         <span class="type">QueueEntry</span>[];
+  active:        <span class="type">number</span>;
+  maxConcurrent: <span class="type">number</span>;  <span class="cm">// default: 1</span>
+  draining:      <span class="type">boolean</span>;
+};
+
+<span class="kw">enum</span> <span class="type">CommandLane</span> {
+  <span class="str">Main</span>,
+  <span class="str">Cron</span>,
+  <span class="str">Subagent</span>,
+  <span class="str">Nested</span>,
+}</code></pre>
+
+        <div class="stat-row">
+          <div class="stat-box">
+            <div class="stat-value">Main</div>
+            <div class="stat-label">Primary Lane</div>
+          </div>
+          <div class="stat-box purple">
+            <div class="stat-value">Cron</div>
+            <div class="stat-label">Scheduled Tasks</div>
+          </div>
+          <div class="stat-box cyan">
+            <div class="stat-value">Subagent</div>
+            <div class="stat-label">Child Agents</div>
+          </div>
+          <div class="stat-box green">
+            <div class="stat-value">Nested</div>
+            <div class="stat-label">Recursive Calls</div>
+          </div>
+        </div>
+
+        <h3 id="sec-7-2">7.2 Dual Queue Strategy</h3>
+        <p>デュアルキュー戦略は、セッションの直列化とグローバルレート制限を両立させます：</p>
+
+        <div class="diagram">Message
+   │
+   ▼
+┌──────────────────────────────┐
+│   Session Lane               │  同一セッション: 直列化
+│   (session serialization)    │  異なるセッション: 並列実行
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│   Global Lane                │  APIレート制限管理
+│   (total concurrency limit)  │  全セッション横断の同時実行制御
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│   API Call                   │
+└──────────────────────────────┘</code></pre></div>
+
+        <div class="callout tip">
+          <div class="callout-title">Concurrency Rules</div>
+          <p>
+            <strong>同一セッション:</strong> 直列化 -- 前のリクエストが完了するまで次は実行されない<br>
+            <strong>異なるセッション:</strong> 並列実行 -- 各セッションは独立して処理可能<br>
+            <strong>グローバルレーン:</strong> APIレート制限管理 -- 全体の同時実行数を制御
+          </p>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 8: Error Handling ==================== -->
+      <section id="section-8">
+        <h2>
+          <span class="section-number" style="background: rgba(167,139,250,0.15); color: var(--accent-purple);">8</span>
+          Error Handling and Recovery
+        </h2>
+
+        <h3 id="sec-8-1">8.1 Hierarchical Error Handling</h3>
+        <p>エラーハンドリングは3つの階層で構成されます：</p>
+
+        <div class="layer-stack">
+          <div class="layer layer-1">
+            <div class="layer-label">Process Level</div>
+            <div class="layer-desc">プロセス全体のエラー捕捉</div>
+            <div class="layer-items">
+              <span class="item">uncaughtException</span>
+              <span class="item">unhandledRejection</span>
+            </div>
+          </div>
+          <div class="layer layer-2">
+            <div class="layer-label">Gateway Level</div>
+            <div class="layer-desc">ゲートウェイ固有のエラー処理</div>
+            <div class="layer-items">
+              <span class="item">GatewayLockError</span>
+              <span class="item">Config Errors</span>
+            </div>
+          </div>
+          <div class="layer layer-3">
+            <div class="layer-label">Agent Execution</div>
+            <div class="layer-desc">エージェント実行時のエラーハンドリングとリカバリ</div>
+            <div class="layer-items">
+              <span class="item">FailoverError &rarr; model fallback</span>
+              <span class="item">AuthError &rarr; profile rotation</span>
+              <span class="item">BillingError &rarr; user notification</span>
+              <span class="item">ContextOverflow &rarr; compaction</span>
+              <span class="item">RateLimit &rarr; fallback</span>
+              <span class="item">Timeout &rarr; fallback / rethrow</span>
+            </div>
+          </div>
+          <div class="layer layer-4">
+            <div class="layer-label">Tool Execution</div>
+            <div class="layer-desc">ツール実行レベルのエラー</div>
+            <div class="layer-items">
+              <span class="item">ToolError &rarr; return to agent</span>
+              <span class="item">AbortError &rarr; abort</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 id="sec-8-2">8.2 Failover Error Classification</h3>
+        <p>エラー分類関数群：</p>
+
+        <pre><code><span class="cm">// Failover Error Classification Functions</span>
+<span class="fn">isAuthAssistantError</span>(error)
+<span class="fn">isBillingAssistantError</span>(error)
+<span class="fn">isContextOverflowError</span>(error)
+<span class="fn">isFailoverAssistantError</span>(error)
+<span class="fn">isRateLimitAssistantError</span>(error)
+<span class="fn">isTimeoutErrorMessage</span>(error)
+<span class="fn">classifyFailoverReason</span>(error)  <span class="cm">// unified classifier</span></code></pre>
+
+        <h3 id="sec-8-3">8.3 Auth Profile Rotation</h3>
+        <p>複数のAPIキーを管理し、障害時に自動ローテーションを行います：</p>
+
+        <div class="flow-diagram">
+          <div class="flow-step highlight">Multiple API Keys</div>
+          <div class="flow-arrow">&#8595; on failure</div>
+          <div class="flow-step">Auto-rotation</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step">Cooldown Management</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-step" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <span class="tag orange">markAuthProfileFailure()</span>
+            <span class="tag green">markAuthProfileGood()</span>
+          </div>
+        </div>
+
+        <h3 id="sec-8-4">8.4 Boot File</h3>
+        <div class="callout info">
+          <div class="callout-title">BOOT.md</div>
+          <p>
+            <code>BOOT.md</code> が起動時にロードされ、エージェントがスタートアップチェックを実行します。
+            これにより、環境の初期診断と自己検証が自動的に行われます。
+          </p>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 9: Hook System ==================== -->
+      <section id="section-9">
+        <h2>
+          <span class="section-number" style="background: rgba(103,232,249,0.15); color: var(--accent-cyan);">9</span>
+          Hook System
+        </h2>
+
+        <p>内部フックシステムはイベント駆動型のモニタリングと拡張を実現します：</p>
+
+        <div class="card-grid">
+          <div class="card blue">
+            <div class="card-title">Internal Hook Events</div>
+            <div class="card-desc">
+              <code>command</code> -- コマンド実行<br>
+              <code>session</code> -- セッションライフサイクル<br>
+              <code>agent</code> -- エージェントイベント<br>
+              <code>gateway</code> -- ゲートウェイイベント
+            </div>
+          </div>
+          <div class="card purple">
+            <div class="card-title">Registration API</div>
+            <div class="card-desc">
+              <code>registerInternalHook('command', handler)</code><br>
+              <code>registerInternalHook('command:new', handler)</code><br>
+              <code>api.registerHook(events, handler)</code>
+            </div>
+          </div>
+        </div>
+
+        <pre><code><span class="cm">// Internal hook registration</span>
+<span class="fn">registerInternalHook</span>(<span class="str">'command'</span>, (event) =&gt; {
+  <span class="cm">// handle command lifecycle events</span>
+});
+
+<span class="fn">registerInternalHook</span>(<span class="str">'command:new'</span>, (event) =&gt; {
+  <span class="cm">// handle new command events</span>
+});
+
+<span class="cm">// Plugin hook registration</span>
+api.<span class="fn">registerHook</span>([<span class="str">'agent:start'</span>, <span class="str">'agent:end'</span>], (event) =&gt; {
+  <span class="cm">// monitor agent lifecycle</span>
+});</code></pre>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Section 10: Self-Growing Agent ==================== -->
+      <section id="section-10">
+        <h2>
+          <span class="section-number" style="background: rgba(110,231,183,0.15); color: var(--accent-green);">10</span>
+          Implications for Self-Growing Agent Development
+        </h2>
+
+        <p>OpenClawのデザインパターンは自己成長エージェント開発に直接応用可能です：</p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Pattern</th>
+                <th>OpenClaw Implementation</th>
+                <th>Self-Growth Application</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Lane concurrency</strong></td>
+                <td><code>CommandLane</code> + <code>command-queue.ts</code></td>
+                <td>安全な並列自己改善</td>
+              </tr>
+              <tr>
+                <td><strong>Dynamic plugin registration</strong></td>
+                <td><code>PluginRegistry</code> + <code>plugin-sdk</code></td>
+                <td>ランタイム能力拡張</td>
+              </tr>
+              <tr>
+                <td><strong>Hook-driven monitoring</strong></td>
+                <td><code>InternalHookEvent</code></td>
+                <td>実行パターン分析</td>
+              </tr>
+              <tr>
+                <td><strong>Failover</strong></td>
+                <td><code>model-fallback.ts</code> + <code>auth-profiles.ts</code></td>
+                <td>エラー分類型リカバリ</td>
+              </tr>
+              <tr>
+                <td><strong>Session persistence</strong></td>
+                <td><code>session-key</code> + <code>compaction</code></td>
+                <td>長期記憶とコンテキスト</td>
+              </tr>
+              <tr>
+                <td><strong>DI / mockable design</strong></td>
+                <td><code>CliDeps</code> + <code>RuntimeEnv</code></td>
+                <td>テスト駆動型自己検証</td>
+              </tr>
+              <tr>
+                <td><strong>Lazy loading</strong></td>
+                <td><code>register.subclis.ts</code></td>
+                <td>オンデマンド能力ロード</td>
+              </tr>
+              <tr>
+                <td><strong>Bootstrap</strong></td>
+                <td><code>BOOT.md</code> + <code>boot.ts</code></td>
+                <td>起動時自己診断</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Recommended Architecture Approaches</h3>
+        <p>自己成長エージェント開発において推奨されるアーキテクチャアプローチ：</p>
+
+        <div class="pattern-grid">
+          <div class="pattern-card">
+            <div class="pattern-name">1. Dual Lane Queueing</div>
+            <div class="pattern-where">command-queue.ts</div>
+            <div class="pattern-desc">セッションレベルとグローバルレベルのデュアルキューにより、安全な並行処理と自己改善タスクの直列化を実現</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">2. Plugin Registry Pattern</div>
+            <div class="pattern-where">plugin-registry.ts</div>
+            <div class="pattern-desc">動的プラグイン登録により、ランタイムでの能力拡張とホットスワップを可能に</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">3. Event Sourcing</div>
+            <div class="pattern-where">agent-events.ts</div>
+            <div class="pattern-desc">すべてのエージェントイベントを記録し、実行パターンの分析と最適化に活用</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">4. Failover Chain</div>
+            <div class="pattern-where">model-fallback.ts</div>
+            <div class="pattern-desc">エラー分類に基づく段階的フォールバックにより、システムの回復力を向上</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-name">5. Context Window Guard</div>
+            <div class="pattern-where">context-window.ts</div>
+            <div class="pattern-desc">コンテキストウィンドウの監視とコンパクションにより、長期セッションの安定性を確保</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- ==================== Appendix ==================== -->
+      <section id="appendix">
+        <h2>
+          <span class="section-number" style="background: rgba(251,191,36,0.15); color: var(--accent-orange);">A</span>
+          Appendix: Key File Paths
+        </h2>
+
+        <details>
+          <summary>CLI Structure Files</summary>
+          <div class="details-content">
+            <div class="file-tree">
+<span class="dir">src/</span>
+<span class="indent"></span><span class="file">entry.ts</span> <span class="comment">-- CLI entry point</span>
+<span class="indent"></span><span class="dir">cli/</span>
+<span class="indent"></span><span class="indent"></span><span class="file">run-main.ts</span> <span class="comment">-- runCli() bootstrap</span>
+<span class="indent"></span><span class="indent"></span><span class="file">program.ts</span> <span class="comment">-- Commander program</span>
+<span class="indent"></span><span class="indent"></span><span class="file">build-program.ts</span> <span class="comment">-- Program builder</span>
+<span class="indent"></span><span class="indent"></span><span class="file">command-registry.ts</span> <span class="comment">-- Core commands</span>
+<span class="indent"></span><span class="indent"></span><span class="file">register.subclis.ts</span> <span class="comment">-- Lazy subcommand registration</span>
+<span class="indent"></span><span class="indent"></span><span class="file">progress.ts</span> <span class="comment">-- CLI progress utilities</span>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Gateway Architecture Files</summary>
+          <div class="details-content">
+            <div class="file-tree">
+<span class="dir">src/cli/gateway-cli/</span>
+<span class="indent"></span><span class="file">run.ts</span> <span class="comment">-- runGatewayCommand</span>
+<span class="dir">src/gateway/</span>
+<span class="indent"></span><span class="file">run-loop.ts</span> <span class="comment">-- runGatewayLoop</span>
+<span class="indent"></span><span class="file">server.impl.ts</span> <span class="comment">-- startGatewayServer</span>
+<span class="indent"></span><span class="file">server-startup.ts</span> <span class="comment">-- startGatewaySidecars</span>
+<span class="indent"></span><span class="file">server-channels.ts</span> <span class="comment">-- createChannelManager</span>
+<span class="indent"></span><span class="file">server-chat.ts</span> <span class="comment">-- createAgentEventHandler</span>
+<span class="indent"></span><span class="file">server-ws-runtime.ts</span> <span class="comment">-- WebSocket connections</span>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Agent and Routing Files</summary>
+          <div class="details-content">
+            <div class="file-tree">
+<span class="dir">src/commands/</span>
+<span class="indent"></span><span class="file">agent.ts</span> <span class="comment">-- agentCommand()</span>
+<span class="dir">src/routing/</span>
+<span class="indent"></span><span class="file">resolve-route.ts</span> <span class="comment">-- resolveAgentRoute()</span>
+<span class="indent"></span><span class="file">session-key.ts</span> <span class="comment">-- Session key construction</span>
+<span class="dir">src/infra/</span>
+<span class="indent"></span><span class="file">command-queue.ts</span> <span class="comment">-- Lane/queue management</span>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Plugin System Files</summary>
+          <div class="details-content">
+            <div class="file-tree">
+<span class="dir">src/plugins/</span>
+<span class="indent"></span><span class="file">cli.ts</span> <span class="comment">-- Plugin CLI commands</span>
+<span class="indent"></span><span class="file">registry.ts</span> <span class="comment">-- PluginRegistry</span>
+<span class="indent"></span><span class="file">loader.ts</span> <span class="comment">-- Plugin loading (jiti)</span>
+<span class="dir">extensions/</span>
+<span class="indent"></span><span class="dir">msteams/</span> <span class="comment">-- MS Teams plugin</span>
+<span class="indent"></span><span class="dir">matrix/</span> <span class="comment">-- Matrix plugin</span>
+<span class="indent"></span><span class="dir">zalo/</span> <span class="comment">-- Zalo plugin</span>
+<span class="indent"></span><span class="dir">zalouser/</span> <span class="comment">-- Zalo User plugin</span>
+<span class="indent"></span><span class="dir">voice-call/</span> <span class="comment">-- Voice Call plugin</span>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Provider and Model Files</summary>
+          <div class="details-content">
+            <div class="file-tree">
+<span class="dir">src/provider/</span>
+<span class="indent"></span><span class="file">defaults.ts</span> <span class="comment">-- Default provider config</span>
+<span class="indent"></span><span class="file">model-selection.ts</span> <span class="comment">-- Model selection logic</span>
+<span class="indent"></span><span class="file">model-catalog.ts</span> <span class="comment">-- Model catalog</span>
+<span class="indent"></span><span class="file">model-auth.ts</span> <span class="comment">-- Model authentication</span>
+<span class="indent"></span><span class="file">model-fallback.ts</span> <span class="comment">-- Model fallback chains</span>
+<span class="indent"></span><span class="file">auth-profiles.ts</span> <span class="comment">-- Auth profile rotation</span>
+<span class="indent"></span><span class="file">models-config.ts</span> <span class="comment">-- Model configuration</span>
+<span class="indent"></span><span class="dir">pi-embedded-runner/</span> <span class="comment">-- Embedded Pi agent runner</span>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Error Handling and Hook Files</summary>
+          <div class="details-content">
+            <div class="file-tree">
+<span class="dir">src/infra/</span>
+<span class="indent"></span><span class="file">failover.ts</span> <span class="comment">-- Failover error classification</span>
+<span class="indent"></span><span class="file">hooks.ts</span> <span class="comment">-- Internal hook system</span>
+<span class="dir">src/</span>
+<span class="indent"></span><span class="file">boot.ts</span> <span class="comment">-- BOOT.md loader</span>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <!-- Footer -->
+      <footer class="page-footer">
+        OpenClaw Architecture Analysis Reports &mdash; Harness &amp; Framework Structure &mdash; Based on commit <code>328b69be1</code>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Back to Top Button -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">&uarr;</button>
+
+  <!-- Scripts -->
+  <script>
+    // Back to Top
+    const backToTop = document.getElementById('backToTop');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 400) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
+    });
+    backToTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // TOC Highlighting
+    const tocLinks = document.querySelectorAll('.sidebar .toc-list a');
+    const sections = [];
+    tocLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        const target = document.getElementById(href.slice(1));
+        if (target) {
+          sections.push({ link, target });
+        }
+      }
+    });
+
+    function updateTocHighlight() {
+      const scrollPos = window.scrollY + 100;
+      let current = null;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        if (sections[i].target.offsetTop <= scrollPos) {
+          current = sections[i];
+          break;
+        }
+      }
+      tocLinks.forEach(l => l.classList.remove('active'));
+      if (current) {
+        current.link.classList.add('active');
+        // Scroll sidebar to keep active link visible
+        const sidebar = document.getElementById('sidebar');
+        const linkRect = current.link.getBoundingClientRect();
+        const sidebarRect = sidebar.getBoundingClientRect();
+        if (linkRect.top < sidebarRect.top || linkRect.bottom > sidebarRect.bottom) {
+          current.link.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      }
+    }
+
+    window.addEventListener('scroll', updateTocHighlight);
+    window.addEventListener('load', updateTocHighlight);
+
+    // Sidebar Toggle (mobile)
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+
+    // Close sidebar when clicking a TOC link on mobile
+    tocLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 1024) {
+          sidebar.classList.remove('open');
+        }
+      });
+    });
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 1024 &&
+          sidebar.classList.contains('open') &&
+          !sidebar.contains(e.target) &&
+          e.target !== sidebarToggle) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+
+</body>
+</html>

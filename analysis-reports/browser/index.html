@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw Analysis Reports</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <span class="logo">OpenClaw Analysis</span>
+    <div class="nav-links">
+      <a href="index.html" class="active">Home</a>
+      <a href="01-memory-strategy.html">Memory</a>
+      <a href="02-harness-framework.html">Harness</a>
+      <a href="03-self-growth-mechanisms.html">Growth</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="index-hero animate-in">
+    <h1>OpenClaw<br>Architecture Analysis</h1>
+    <p class="subtitle">
+      OpenClawのアーキテクチャを3つの視点から分析したレポート集。<br>
+      メモリ戦略、ハーネス構造、自己成長メカニズムの詳細を網羅しています。
+    </p>
+
+    <div class="stat-row" style="justify-content: center; max-width: 600px; margin: 0 auto 1rem;">
+      <div class="stat-box">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Memory Layers</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-value">10+</div>
+        <div class="stat-label">Plugin Types</div>
+      </div>
+      <div class="stat-box cyan">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Growth Mechanisms</div>
+      </div>
+      <div class="stat-box green">
+        <div class="stat-value">10</div>
+        <div class="stat-label">Design Principles</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Report Cards -->
+  <section class="index-cards">
+
+    <a href="01-memory-strategy.html" class="index-card blue animate-in">
+      <div class="card-header">
+        <div class="card-number">01</div>
+        <div class="card-title">Memory Strategy Analysis</div>
+      </div>
+      <div class="card-body">
+        OpenClawの4層メモリアーキテクチャを詳細に分析。セッションストア、トランスクリプト永続化、
+        ベクトルインデックス、コンテキストコンパクションの各層について、実装パターンとデータフローを解説します。
+      </div>
+      <div class="card-tags">
+        <span class="tag blue">Session Store</span>
+        <span class="tag purple">Vector Index</span>
+        <span class="tag cyan">Hybrid Search</span>
+        <span class="tag green">Compaction</span>
+        <span class="tag orange">Embedding Cache</span>
+      </div>
+      <span class="card-arrow">&rarr;</span>
+    </a>
+
+    <a href="02-harness-framework.html" class="index-card purple animate-in">
+      <div class="card-header">
+        <div class="card-number">02</div>
+        <div class="card-title">Harness &amp; Framework Structure</div>
+      </div>
+      <div class="card-body">
+        CLI構造、ゲートウェイアーキテクチャ、エージェントライフサイクル、メッセージルーティング、
+        プラグインシステム、レーン型並行制御など、OpenClawのフレームワーク全体構造を包括的に分析します。
+      </div>
+      <div class="card-tags">
+        <span class="tag purple">CLI Architecture</span>
+        <span class="tag blue">Gateway Server</span>
+        <span class="tag cyan">Plugin System</span>
+        <span class="tag green">Lane Concurrency</span>
+        <span class="tag pink">Model Fallback</span>
+      </div>
+      <span class="card-arrow">&rarr;</span>
+    </a>
+
+    <a href="03-self-growth-mechanisms.html" class="index-card cyan animate-in">
+      <div class="card-header">
+        <div class="card-number">03</div>
+        <div class="card-title">Self-Growth Mechanisms</div>
+      </div>
+      <div class="card-body">
+        AIエージェントが環境から学び、自己改善し、新しい能力を獲得するための8つの主要メカニズムを分析。
+        ツール利用、フィードバックループ、メモリシステム、スキルシステム、Doctorパターンなどの
+        実践的デザインパターンを抽出します。
+      </div>
+      <div class="card-tags">
+        <span class="tag cyan">Tool System</span>
+        <span class="tag orange">Feedback Loop</span>
+        <span class="tag green">Skill System</span>
+        <span class="tag purple">Self-Diagnosis</span>
+        <span class="tag blue">Event Hooks</span>
+      </div>
+      <span class="card-arrow">&rarr;</span>
+    </a>
+
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    OpenClaw Architecture Analysis Reports &mdash; Based on commit <code>328b69be1</code>
+  </footer>
+
+</body>
+</html>

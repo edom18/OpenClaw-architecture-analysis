@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Strategy Analysis - OpenClaw Analysis</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ===== Top Navigation ===== -->
+<nav class="top-nav">
+  <button class="sidebar-toggle" aria-label="Toggle sidebar">&#9776;</button>
+  <span class="logo">OpenClaw Analysis</span>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="01-memory-strategy.html" class="active">Memory</a>
+    <a href="02-harness-framework.html">Harness</a>
+    <a href="03-self-growth-mechanisms.html">Growth</a>
+  </div>
+</nav>
+
+<!-- ===== Page Wrapper ===== -->
+<div class="page-wrapper">
+
+  <!-- ===== Sidebar (Table of Contents) ===== -->
+  <aside class="sidebar">
+    <div class="toc-title">Table of Contents</div>
+    <ul class="toc-list">
+      <li><a href="#summary">Summary</a></li>
+      <li><a href="#section1">1. Session Management</a></li>
+      <li class="sub"><a href="#s1-1">1.1 Session Store</a></li>
+      <li class="sub"><a href="#s1-2">1.2 Cache Strategy</a></li>
+      <li class="sub"><a href="#s1-3">1.3 Store Lock</a></li>
+      <li class="sub"><a href="#s1-4">1.4 Write Lock</a></li>
+      <li class="sub"><a href="#s1-5">1.5 Session Scope</a></li>
+      <li><a href="#section2">2. Context Management</a></li>
+      <li class="sub"><a href="#s2-1">2.1 Context Window Guard</a></li>
+      <li class="sub"><a href="#s2-2">2.2 Compaction</a></li>
+      <li><a href="#section3">3. Persistent Memory</a></li>
+      <li class="sub"><a href="#s3-1">3.1 Memory Index Manager</a></li>
+      <li class="sub"><a href="#s3-2">3.2 Embedding Providers</a></li>
+      <li class="sub"><a href="#s3-3">3.3 Hybrid Search</a></li>
+      <li class="sub"><a href="#s3-4">3.4 Chunking</a></li>
+      <li class="sub"><a href="#s3-5">3.5 Batch Embedding</a></li>
+      <li class="sub"><a href="#s3-6">3.6 Sync Triggers</a></li>
+      <li class="sub"><a href="#s3-7">3.7-3.9 Cache &amp; Reindex</a></li>
+      <li><a href="#section4">4. QMD Backend</a></li>
+      <li><a href="#section5">5. Configuration</a></li>
+      <li><a href="#section6">6. Design Patterns</a></li>
+      <li><a href="#section7">7. Data Flow</a></li>
+      <li><a href="#section8">8. Implications</a></li>
+      <li><a href="#appendix">Appendix: File Map</a></li>
+    </ul>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <main class="main-content">
+
+    <h1>OpenClaw Memory Strategy Analysis Report</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">OpenClaw Memory Architecture &mdash; Technical Deep Dive</p>
+
+    <!-- ===== Stat Row ===== -->
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Memory Layers</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Embedding Providers</div>
+      </div>
+      <div class="stat-box cyan">
+        <div class="stat-value">5</div>
+        <div class="stat-label">Sync Triggers</div>
+      </div>
+      <div class="stat-box green">
+        <div class="stat-value">10</div>
+        <div class="stat-label">Design Patterns</div>
+      </div>
+      <div class="stat-box orange">
+        <div class="stat-value">25+</div>
+        <div class="stat-label">Key Files</div>
+      </div>
+    </div>
+
+    <!-- ===== Summary ===== -->
+    <h2 id="summary"><span class="section-number" style="background: rgba(108,138,255,0.15); color: var(--accent-blue);">S</span> Summary</h2>
+
+    <div class="summary-box">
+      <div class="summary-title">Executive Summary</div>
+      <p>OpenClawは、WhatsApp / Discord / Telegram等のメッセージングチャネルを統合するAIエージェントゲートウェイです。そのメモリ戦略は<strong>4層アーキテクチャ</strong>で構成されています:</p>
+      <ol>
+        <li><strong>Session Store Layer</strong> &mdash; JSON5ファイルベースのセッションメタデータ管理 (短期〜中期)</li>
+        <li><strong>Session Transcript Layer</strong> &mdash; JSONL会話履歴の永続化 (中期)</li>
+        <li><strong>Vector Index Layer</strong> &mdash; SQLite + Embeddingによるセマンティック検索メモリ (長期)</li>
+        <li><strong>Context Compaction Layer</strong> &mdash; LLMベースの会話要約によるコンテキスト圧縮 (ランタイム)</li>
+      </ol>
+      <p>各レイヤーはエージェントIDでスコープ分離され、<strong>3つのトリガー</strong>(ファイルウォッチャー、イベントリスナー、定期同期)で同期されます。特筆すべき機能として、<strong>ハイブリッド検索</strong>(ベクトル + BM25全文検索)、<strong>バッチエンベディング</strong>(OpenAI / Gemini Batch API)、<strong>QMD外部ツール統合</strong>とフォールバックがあります。</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Section 1: Session Management ===== -->
+    <h2 id="section1"><span class="section-number" style="background: rgba(108,138,255,0.15); color: var(--accent-blue);">1</span> Session Management</h2>
+
+    <h3 id="s1-1">1.1 Session Store</h3>
+    <p>セッションメタデータはエージェントごとにJSON5ファイルとして管理されます。</p>
+    <pre><code>File path: ~/.openclaw/agents/{agentId}/sessions/sessions.json</code></pre>
+
+    <h4>Key Source Files</h4>
+    <ul>
+      <li><code>src/config/sessions/store.ts:109</code> &mdash; <strong>loadSessionStore()</strong></li>
+      <li><code>src/config/sessions/store.ts:257</code> &mdash; <strong>saveSessionStore()</strong></li>
+      <li><code>src/config/sessions/store.ts:266</code> &mdash; <strong>updateSessionStore()</strong> (ロック付き読み書き)</li>
+      <li><code>src/config/sessions/paths.ts:32</code> &mdash; <strong>resolveDefaultSessionStorePath()</strong></li>
+    </ul>
+
+    <h4>Session Entry Fields</h4>
+    <p>ソース: <code>src/config/sessions/types.ts:25-96</code></p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>sessionId</code></td><td>セッション固有ID (UUID)</td></tr>
+          <tr><td><code>updatedAt</code></td><td>最終更新タイムスタンプ</td></tr>
+          <tr><td><code>sessionFile</code></td><td>トランスクリプトファイルパス</td></tr>
+          <tr><td><code>compactionCount</code></td><td>コンパクション実行回数</td></tr>
+          <tr><td><code>memoryFlushAt</code></td><td>メモリフラッシュタイムスタンプ</td></tr>
+          <tr><td><code>modelOverride</code></td><td>モデルオーバーライド設定</td></tr>
+          <tr><td><code>thinkingLevel</code></td><td>思考レベル設定</td></tr>
+          <tr><td><code>inputTokens</code> / <code>outputTokens</code> / <code>totalTokens</code></td><td>トークン使用量</td></tr>
+          <tr><td><code>skillsSnapshot</code></td><td>スキルスナップショット</td></tr>
+          <tr><td><code>systemPromptReport</code></td><td>システムプロンプトレポート</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="s1-2">1.2 Session Store Cache Strategy</h3>
+    <p>TTL付きインメモリキャッシュ:</p>
+    <ul>
+      <li><code>src/config/sessions/store.ts:28</code> &mdash; <strong>SESSION_STORE_CACHE</strong> (Map)</li>
+      <li><code>src/config/sessions/store.ts:29</code> &mdash; <strong>DEFAULT_SESSION_STORE_TTL_MS = 45,000</strong> (45秒)</li>
+      <li>TTLは <code>OPENCLAW_SESSION_CACHE_TTL_MS</code> 環境変数で調整可能</li>
+      <li>ファイルmtimeを監視し、変更時にキャッシュを無効化</li>
+      <li><strong>Write-Invalidate戦略</strong></li>
+      <li><code>structuredClone()</code> によるディープコピーを返却</li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-title">INFO</div>
+      <p>キャッシュのTTLはデフォルト45秒ですが、環境変数 <code>OPENCLAW_SESSION_CACHE_TTL_MS</code> で調整可能です。高頻度なセッションアクセスが必要な場合はこの値を短縮してください。</p>
+    </div>
+
+    <h3 id="s1-3">1.3 Session Store Lock</h3>
+    <p>ファイルベースのロック機構:</p>
+    <ul>
+      <li><code>src/config/sessions/store.ts:285</code> &mdash; <strong>withSessionStoreLock()</strong></li>
+      <li>ロックファイル: <code>{storePath}.lock</code></li>
+      <li>タイムアウト: <strong>10秒</strong> (デフォルト)</li>
+      <li>古いロック検出: <strong>30秒</strong>後に自動削除</li>
+      <li>ポーリング間隔: <strong>25ms</strong></li>
+    </ul>
+
+    <h3 id="s1-4">1.4 Session Write Lock (for Transcripts)</h3>
+    <ul>
+      <li><code>src/agents/session-write-lock.ts:140</code> &mdash; <strong>acquireSessionWriteLock()</strong></li>
+      <li><code>{sessionFile}.lock</code> 排他ロック</li>
+      <li>PIDベースの古いロック検出</li>
+      <li>再入可能ロック (同一プロセス内での複数取得)</li>
+      <li>プロセス終了時の自動クリーンアップ (SIGINT/SIGTERM/exit ハンドラー)</li>
+    </ul>
+
+    <h3 id="s1-5">1.5 Session Scope</h3>
+    <p>2つのスコープ: <span class="tag blue">per-sender</span> (送信者ごとに独立) と <span class="tag purple">global</span> (全送信者で共有)</p>
+    <p>セッションキーはチャネル、チャットタイプ、送信者IDの組み合わせから生成されます。</p>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Section 2: Context Management ===== -->
+    <h2 id="section2"><span class="section-number" style="background: rgba(167,139,250,0.15); color: var(--accent-purple);">2</span> Context Management</h2>
+    <p>会話履歴の圧縮・保持戦略</p>
+
+    <h3 id="s2-1">2.1 Context Window Guard</h3>
+    <ul>
+      <li><strong>CONTEXT_WINDOW_HARD_MIN_TOKENS</strong> = 16,000</li>
+      <li><strong>CONTEXT_WINDOW_WARN_BELOW_TOKENS</strong> = 32,000</li>
+    </ul>
+    <p>解決順序: <code>modelsConfig</code> &rarr; <code>model</code> &rarr; <code>agentContextTokens</code> &rarr; デフォルト</p>
+
+    <h3 id="s2-2">2.2 Compaction (会話要約)</h3>
+
+    <h4>Constants</h4>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-value">0.4</div>
+        <div class="stat-label">BASE_CHUNK_RATIO</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-value">0.15</div>
+        <div class="stat-label">MIN_CHUNK_RATIO</div>
+      </div>
+      <div class="stat-box cyan">
+        <div class="stat-value">1.2</div>
+        <div class="stat-label">SAFETY_MARGIN</div>
+      </div>
+    </div>
+
+    <h4>Compaction Flow</h4>
+    <div class="flow-diagram">
+      <div class="flow-step">Messages (入力メッセージ群)</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step">splitMessagesByTokenShare()</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step">チャンク分割</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step">chunkMessagesByMaxTokens()</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step highlight">generateSummary()</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step highlight">summarizeInStages()</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step">段階的要約 &rarr; マージサマリー</div>
+    </div>
+
+    <h4>Key Functions</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Function</th><th>Line</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>splitMessagesByTokenShare()</code></td><td>27</td><td>トークンベースのメッセージ均等分配</td></tr>
+          <tr><td><code>chunkMessagesByMaxTokens()</code></td><td>68</td><td>最大トークン数によるチャンキング</td></tr>
+          <tr><td><code>computeAdaptiveChunkRatio()</code></td><td>110</td><td>メッセージサイズに基づく適応的チャンク比率</td></tr>
+          <tr><td><code>isOversizedForSummary()</code></td><td>135</td><td>単一メッセージがコンテキストの50%を超える場合</td></tr>
+          <tr><td><code>summarizeWithFallback()</code></td><td>176</td><td>フォールバック付き要約</td></tr>
+          <tr><td><code>summarizeInStages()</code></td><td>244</td><td>段階的要約</td></tr>
+          <tr><td><code>pruneHistoryForContextShare()</code></td><td>307</td><td>履歴プルーニング</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Fallback Strategy</h4>
+    <div class="callout warning">
+      <div class="callout-title">Fallback Chain</div>
+      <ol class="styled-list">
+        <li>全メッセージの要約を試行</li>
+        <li>失敗時: 大きなメッセージを除外し、部分要約を実行</li>
+        <li>それも失敗時: メタ情報のみの &quot;要約不可&quot; メッセージを生成</li>
+      </ol>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Section 3: Persistent Memory ===== -->
+    <h2 id="section3"><span class="section-number" style="background: rgba(103,232,249,0.15); color: var(--accent-cyan);">3</span> Persistent Memory (Long-term)</h2>
+
+    <h3 id="s3-1">3.1 Memory Index Manager (Built-in Backend)</h3>
+    <p>コア長期メモリ。SQLiteデータベースにエンベディングベクトルとテキストチャンクを格納します。</p>
+    <ul>
+      <li><code>src/memory/manager.ts:108</code> &mdash; <strong>class MemoryIndexManager</strong></li>
+      <li>データソース: <span class="tag blue">memory</span> (MEMORY.md + memory/ ディレクトリのMarkdownファイル) と <span class="tag green">sessions</span> (セッショントランスクリプト)</li>
+      <li>ストレージ: <code>~/.openclaw/memory/{agentId}.sqlite</code> (Node.js 22+ <code>node:sqlite</code> DatabaseSync使用)</li>
+    </ul>
+
+    <h4>Database Schema</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Table</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>meta</code></td><td>メタデータ管理テーブル</td></tr>
+          <tr><td><code>files</code></td><td>インデックス対象ファイル管理</td></tr>
+          <tr><td><code>chunks</code></td><td>テキストチャンク + embeddingベクトル</td></tr>
+          <tr><td><code>embedding_cache</code></td><td>エンベディングキャッシュ</td></tr>
+          <tr><td><code>chunks_fts</code></td><td>FTS5全文検索インデックス</td></tr>
+          <tr><td><code>chunks_vec</code></td><td>sqlite-vec拡張ベクトルインデックス</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="s3-2">3.2 Embedding Providers</h3>
+    <p>3つのプロバイダーが利用可能です:</p>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-value">OpenAI</div>
+        <div class="stat-label">text-embedding-3-small</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-value">Gemini</div>
+        <div class="stat-label">gemini-embedding-001</div>
+      </div>
+      <div class="stat-box cyan">
+        <div class="stat-value">Local</div>
+        <div class="stat-label">embeddinggemma-300M</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">Auto Mode</div>
+      <p><code>auto</code> モード選択時のフォールバック順序: <strong>OpenAI</strong> &rarr; <strong>Gemini</strong> &rarr; <strong>Local</strong> (node-llama-cpp経由)</p>
+    </div>
+
+    <h3 id="s3-3">3.3 Hybrid Search</h3>
+    <p>ベクトル + BM25全文検索のハイブリッド検索:</p>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-value">0.7</div>
+        <div class="stat-label">Vector Weight</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-value">0.3</div>
+        <div class="stat-label">Text Weight (BM25)</div>
+      </div>
+      <div class="stat-box cyan">
+        <div class="stat-value">4x</div>
+        <div class="stat-label">Candidate Multiplier</div>
+      </div>
+      <div class="stat-box green">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Max Results</div>
+      </div>
+      <div class="stat-box orange">
+        <div class="stat-value">0.35</div>
+        <div class="stat-label">Min Score</div>
+      </div>
+    </div>
+
+    <h3 id="s3-4">3.4 Chunking</h3>
+    <ul>
+      <li><strong>DEFAULT_CHUNK_TOKENS</strong> = 400</li>
+      <li><strong>DEFAULT_CHUNK_OVERLAP</strong> = 80</li>
+    </ul>
+
+    <h3 id="s3-5">3.5 Batch Embedding</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Constant</th><th>Value</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>SESSION_DIRTY_DEBOUNCE_MS</code></td><td>5,000</td><td>セッションダーティデバウンス</td></tr>
+          <tr><td><code>EMBEDDING_BATCH_MAX_TOKENS</code></td><td>8,000</td><td>バッチ最大トークン数</td></tr>
+          <tr><td><code>EMBEDDING_INDEX_CONCURRENCY</code></td><td>4</td><td>インデックス並行数</td></tr>
+          <tr><td><code>EMBEDDING_RETRY_MAX_ATTEMPTS</code></td><td>3</td><td>リトライ最大回数</td></tr>
+          <tr><td><code>BATCH_FAILURE_LIMIT</code></td><td>2</td><td>バッチ失敗リミット(サーキットブレーカー)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="s3-6">3.6 Sync Triggers</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Trigger</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>File Watcher</strong></td><td><span class="tag green">Enabled</span> (1.5s debounce)</td><td>MEMORY.md / memory/ の変更を監視</td></tr>
+          <tr><td><strong>Session Event</strong></td><td><span class="tag green">Enabled</span> (5s debounce)</td><td>トランスクリプト更新イベントを監視</td></tr>
+          <tr><td><strong>Periodic Sync</strong></td><td><span class="tag orange">Disabled</span> (0 min)</td><td>設定可能な定期同期間隔</td></tr>
+          <tr><td><strong>Search-time Sync</strong></td><td><span class="tag green">Enabled</span></td><td>ダーティフラグがある場合、検索前に同期</td></tr>
+          <tr><td><strong>Session Start</strong></td><td><span class="tag green">Enabled</span></td><td>新規セッション開始時に同期</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>セッションデルタ同期閾値:</p>
+    <ul>
+      <li><strong>DEFAULT_SESSION_DELTA_BYTES</strong> = 100,000</li>
+      <li><strong>DEFAULT_SESSION_DELTA_MESSAGES</strong> = 50</li>
+    </ul>
+
+    <h3 id="s3-7">3.7-3.9 Index Cache, Embedding Cache, Atomic Reindex</h3>
+
+    <h4>Index Cache</h4>
+    <ul>
+      <li><strong>INDEX_CACHE</strong> Map によるMemoryIndexManagerインスタンスのキャッシュ</li>
+      <li>キャッシュキー: <code>{agentId}:{workspaceDir}:{JSON(settings)}</code></li>
+    </ul>
+
+    <h4>Embedding Cache</h4>
+    <ul>
+      <li>SQLiteテーブル内にエンベディングキャッシュを保持</li>
+      <li>LRUプルーニングによる容量管理</li>
+    </ul>
+
+    <h4>Atomic Reindex</h4>
+    <div class="flow-diagram">
+      <div class="flow-step">一時DB作成</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step">キャッシュシード</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step highlight">インデックス構築</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step">アトミックスワップ</div>
+      <div class="flow-arrow">&#8595;</div>
+      <div class="flow-step">失敗時: フォールバック (旧DBに復帰)</div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Section 4: QMD Backend ===== -->
+    <h2 id="section4"><span class="section-number" style="background: rgba(110,231,183,0.15); color: var(--accent-green);">4</span> QMD Backend (External Memory Manager)</h2>
+
+    <ul>
+      <li><strong>QmdMemoryManager</strong> クラス: XDG config/cache管理</li>
+      <li>コレクションベースのドキュメント管理</li>
+      <li>セッションMarkdownエクスポート</li>
+      <li><code>qmd query --json</code> によるセマンティック検索</li>
+      <li><strong>FallbackMemoryManager</strong>: QMD &rarr; Built-in フォールバック</li>
+    </ul>
+
+    <div class="callout info">
+      <div class="callout-title">FallbackMemoryManager</div>
+      <p>QMDが利用不可の場合、自動的にビルトインのSQLiteベースメモリマネージャーにフォールバックします。これにより外部依存に関わらずメモリ機能が維持されます。</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Section 5: Configuration ===== -->
+    <h2 id="section5"><span class="section-number" style="background: rgba(251,191,36,0.15); color: var(--accent-orange);">5</span> Configuration &amp; Credentials Management</h2>
+
+    <h4>State Directory</h4>
+    <p>ベースパス: <code>~/.openclaw/</code> (<code>OPENCLAW_STATE_DIR</code> 環境変数でオーバーライド可能)</p>
+    <p>レガシーディレクトリの自動マイグレーション: <code>.clawdbot</code>, <code>.moltbot</code>, <code>.moldbot</code></p>
+
+    <h4>Directory Tree</h4>
+    <div class="file-tree">
+<span class="dir">~/.openclaw/</span>
+<span class="indent"></span><span class="dir">agents/</span>
+<span class="indent"></span><span class="indent"></span><span class="dir">{agentId}/</span>
+<span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="file">sessions/sessions.json</span>   <span class="comment"># Session store</span>
+<span class="indent"></span><span class="indent"></span><span class="indent"></span><span class="file">sessions/{sessionId}.jsonl</span> <span class="comment"># Transcripts</span>
+<span class="indent"></span><span class="dir">memory/</span>
+<span class="indent"></span><span class="indent"></span><span class="file">{agentId}.sqlite</span>            <span class="comment"># Vector index DB</span>
+<span class="indent"></span><span class="dir">credentials/</span>
+<span class="indent"></span><span class="indent"></span><span class="file">device-auth.json</span>            <span class="comment"># Device auth store</span>
+<span class="indent"></span><span class="indent"></span><span class="file">oauth-credentials.json</span>      <span class="comment"># OAuth credentials</span>
+<span class="indent"></span><span class="file">openclaw.json</span>                 <span class="comment"># JSON5 config</span>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Section 6: Design Patterns ===== -->
+    <h2 id="section6"><span class="section-number" style="background: rgba(244,114,182,0.15); color: var(--accent-pink);">6</span> Design Patterns</h2>
+
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="pattern-name">Singleton / Cache</div>
+        <div class="pattern-where">INDEX_CACHE, SESSION_STORE_CACHE, QMD_MANAGER_CACHE</div>
+        <div class="pattern-desc">インスタンスの再利用によるリソース効率化</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">Write-Invalidate Cache</div>
+        <div class="pattern-where">Session Store</div>
+        <div class="pattern-desc">書き込み時にキャッシュを無効化する戦略</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">Debounced Sync</div>
+        <div class="pattern-where">File watcher, Session delta</div>
+        <div class="pattern-desc">頻繁な更新のデバウンス処理</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">Fallback Chain</div>
+        <div class="pattern-where">Embedding providers, QMD &rarr; builtin</div>
+        <div class="pattern-desc">障害時の自動フォールバック</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">Atomic Swap</div>
+        <div class="pattern-where">Reindex</div>
+        <div class="pattern-desc">一時ファイル経由の安全なDB置換</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">File-Based Lock</div>
+        <div class="pattern-where">Session store, Transcripts</div>
+        <div class="pattern-desc">ロックファイルによる排他制御</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">Progressive Summarization</div>
+        <div class="pattern-where">Compaction</div>
+        <div class="pattern-desc">段階的要約 &rarr; マージの漸進的処理</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">Delta Tracking</div>
+        <div class="pattern-where">Session file monitoring</div>
+        <div class="pattern-desc">バイト数/メッセージ数の差分追跡</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">Batch with Circuit Breaker</div>
+        <div class="pattern-where">Batch embedding</div>
+        <div class="pattern-desc">2回の失敗でバッチを無効化</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-name">Provider Key Hashing</div>
+        <div class="pattern-where">Embedding cache</div>
+        <div class="pattern-desc">プロバイダー設定のハッシュをキャッシュキーに使用</div>
+      </div>
+    </div>
+
+    <h3>Memory Hierarchy Diagram</h3>
+    <div class="layer-stack">
+      <div class="layer layer-1">
+        <div class="layer-label">Layer 1: Runtime Memory Layer (volatile)</div>
+        <div class="layer-desc">プロセスメモリ上のキャッシュ。プロセス終了で消失。</div>
+        <div class="layer-items">
+          <span class="item">INDEX_CACHE</span>
+          <span class="item">SESSION_STORE_CACHE</span>
+          <span class="item">MODEL_CACHE</span>
+          <span class="item">QMD_MANAGER_CACHE</span>
+        </div>
+      </div>
+      <div class="layer layer-2">
+        <div class="layer-label">Layer 2: Session Store Layer (short-medium term)</div>
+        <div class="layer-desc">JSON5ファイルベースのセッションメタデータ + JSONLトランスクリプト</div>
+        <div class="layer-items">
+          <span class="item">sessions.json</span>
+          <span class="item">{sessionId}.jsonl</span>
+        </div>
+      </div>
+      <div class="layer layer-3">
+        <div class="layer-label">Layer 3: Compaction Layer (runtime, volatile)</div>
+        <div class="layer-desc">LLMによる会話要約。コンテキストウィンドウ管理のためのランタイム処理。</div>
+        <div class="layer-items">
+          <span class="item">summarizeInStages()</span>
+          <span class="item">pruneHistoryForContextShare()</span>
+        </div>
+      </div>
+      <div class="layer layer-4">
+        <div class="layer-label">Layer 4: Vector Index Layer (long-term, persistent)</div>
+        <div class="layer-desc">セマンティック検索のための永続化されたベクトルインデックス。</div>
+        <div class="layer-items">
+          <span class="item">SQLite (vec0, FTS5)</span>
+          <span class="item">embedding cache</span>
+          <span class="item">hybrid search</span>
+          <span class="item">QMD (external)</span>
+        </div>
+      </div>
+      <div class="layer layer-5">
+        <div class="layer-label">Layer 5: File System Layer (persistent)</div>
+        <div class="layer-desc">全設定・認証情報・メモリファイルの永続化ストレージ。</div>
+        <div class="layer-items">
+          <span class="item">~/.openclaw/ directory tree</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Section 7: Data Flow ===== -->
+    <h2 id="section7"><span class="section-number" style="background: rgba(108,138,255,0.15); color: var(--accent-blue);">7</span> Data Flow Architecture Diagram</h2>
+
+    <div class="diagram">
+                        +------------------+
+                        |   User Message   |
+                        +--------+---------+
+                                 |
+                                 v
+                    +------------+------------+
+                    |  Channel Router         |
+                    |  (WhatsApp/Discord/     |
+                    |   Telegram/Signal etc.) |
+                    +------------+------------+
+                                 |
+                  +--------------+--------------+
+                  |                             |
+                  v                             v
+     +------------+----------+    +------------+-----------+
+     |  Session Store        |    |  Memory Search         |
+     |  (sessions.json)      |    |  (MemoryIndexManager)  |
+     |  - load session meta  |    |  - hybrid search       |
+     |  - resolve session ID |    |  - vector + BM25       |
+     +------------+----------+    +------------+-----------+
+                  |                             |
+                  v                             v
+     +------------+----------+    +------------+-----------+
+     |  Session Transcript   |    |  Context Assembly      |
+     |  ({id}.jsonl)         |    |  - memory results      |
+     |  - append message     |    |  - system prompt       |
+     |  - read history       |    |  - conversation ctx    |
+     +------------+----------+    +------------+-----------+
+                  |                             |
+                  +----------+     +-----------+
+                             |     |
+                             v     v
+                    +--------+-----+--------+
+                    |   Context Compaction   |
+                    |   (if over budget)     |
+                    |   - splitMessages      |
+                    |   - summarizeInStages  |
+                    |   - pruneHistory       |
+                    +--------+--------------+
+                             |
+                             v
+                    +--------+--------+
+                    |   LLM Request   |
+                    +---------+-------+
+                              |
+                              v
+                    +---------+--------+
+                    |   Response       |
+                    +------------------+
+
+     === Sync Triggers (Background) ===
+
+     +------------------+    +------------------+    +------------------+
+     | File Watcher     |    | Session Event    |    | Periodic Sync    |
+     | (1.5s debounce)  |    | (5s debounce)    |    | (configurable)   |
+     +--------+---------+    +--------+---------+    +--------+---------+
+              |                       |                       |
+              +----------+------------+-----------+-----------+
+                         |
+                         v
+              +----------+-----------+
+              |   Embedding Pipeline |
+              |   - chunk text       |
+              |   - batch embed      |
+              |   - upsert to SQLite |
+              +----------------------+
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Section 8: Implications ===== -->
+    <h2 id="section8"><span class="section-number" style="background: rgba(110,231,183,0.15); color: var(--accent-green);">8</span> Implications for Self-Growing Agent Development</h2>
+
+    <p>OpenClawのメモリ戦略から得られる、自己成長型エージェント開発への示唆:</p>
+
+    <ol class="styled-list">
+      <li><strong>メモリ階層は必須</strong> &mdash; 3層構造: 揮発キャッシュ &rarr; セッション永続化 &rarr; セマンティックインデックス。各層の寿命とアクセスパターンに応じた設計が重要。</li>
+      <li><strong>コンパクションは段階的に</strong> &mdash; 分割 &rarr; 部分要約 &rarr; マージのパイプライン。フォールバック付きで堅牢性を確保。</li>
+      <li><strong>ハイブリッド検索</strong> &mdash; ベクトル70% + BM25 30%の重み付けが精度向上に寄与。単一手法よりも安定した検索品質を実現。</li>
+      <li><strong>エンベディングキャッシュ + バッチ処理 + サーキットブレーカー</strong> &mdash; 信頼性のための3層防御。バッチ失敗が2回で自動無効化。</li>
+      <li><strong>アトミックリインデックス</strong> &mdash; モデル切り替え時の安全なDB更新。一時DB &rarr; スワップ &rarr; 失敗時ロールバック。</li>
+      <li><strong>同期戦略の多層化</strong> &mdash; ファイルウォッチャー + イベント駆動 + デバウンス + 検索時同期。リアルタイム性と効率のバランス。</li>
+      <li><strong>マルチプロバイダー + 自動選択 + フォールバックチェーン</strong> &mdash; OpenAI &rarr; Gemini &rarr; Local の段階的フォールバック。</li>
+      <li><strong>エージェントIDによるスコープ分離</strong> &mdash; マルチエージェント環境での安全なメモリ分離。</li>
+      <li><strong>MEMORY.md + memory/ ディレクトリパターン</strong> &mdash; エージェントによる自律的な知識蓄積の基盤。人間が読めるMarkdownとセマンティック検索の両立。</li>
+    </ol>
+
+    <div class="callout tip">
+      <div class="callout-title">Key Takeaway</div>
+      <p>自己成長型エージェントにとって最も重要なのは、<strong>メモリの階層化</strong>と<strong>フォールバックの多重化</strong>です。OpenClawの実装は、単一障害点を排除しつつ、低レイテンシな検索と高精度なセマンティックマッチングを両立するアーキテクチャの好例です。</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- ===== Appendix: File Map ===== -->
+    <h2 id="appendix"><span class="section-number" style="background: rgba(167,139,250,0.15); color: var(--accent-purple);">A</span> Appendix: File Map</h2>
+
+    <details>
+      <summary>Key Source Files (25+ files)</summary>
+      <div class="details-content">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>File</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>src/config/sessions/store.ts</code></td><td>Session Store (load/save/update/lock)</td></tr>
+              <tr><td><code>src/config/sessions/types.ts</code></td><td>Session entry type definitions</td></tr>
+              <tr><td><code>src/config/sessions/paths.ts</code></td><td>Session file path resolution</td></tr>
+              <tr><td><code>src/agents/session-write-lock.ts</code></td><td>Transcript write lock (PID-based)</td></tr>
+              <tr><td><code>src/agents/session-scope.ts</code></td><td>Session scope (per-sender / global)</td></tr>
+              <tr><td><code>src/agents/compaction.ts</code></td><td>Context compaction / summarization</td></tr>
+              <tr><td><code>src/agents/compaction-chunks.ts</code></td><td>Compaction chunking utilities</td></tr>
+              <tr><td><code>src/agents/context-window.ts</code></td><td>Context window guard / token limits</td></tr>
+              <tr><td><code>src/memory/manager.ts</code></td><td>MemoryIndexManager (core long-term memory)</td></tr>
+              <tr><td><code>src/memory/search.ts</code></td><td>Hybrid search (vector + BM25)</td></tr>
+              <tr><td><code>src/memory/embedding.ts</code></td><td>Embedding provider abstraction</td></tr>
+              <tr><td><code>src/memory/embedding-openai.ts</code></td><td>OpenAI embedding provider</td></tr>
+              <tr><td><code>src/memory/embedding-gemini.ts</code></td><td>Gemini embedding provider</td></tr>
+              <tr><td><code>src/memory/embedding-local.ts</code></td><td>Local embedding (node-llama-cpp)</td></tr>
+              <tr><td><code>src/memory/chunking.ts</code></td><td>Text chunking with overlap</td></tr>
+              <tr><td><code>src/memory/batch.ts</code></td><td>Batch embedding pipeline</td></tr>
+              <tr><td><code>src/memory/schema.ts</code></td><td>SQLite schema definitions</td></tr>
+              <tr><td><code>src/memory/sync.ts</code></td><td>Sync triggers (file watcher, events, periodic)</td></tr>
+              <tr><td><code>src/memory/reindex.ts</code></td><td>Atomic reindex (temp DB swap)</td></tr>
+              <tr><td><code>src/memory/qmd.ts</code></td><td>QMD backend integration</td></tr>
+              <tr><td><code>src/memory/fallback.ts</code></td><td>FallbackMemoryManager (QMD &rarr; builtin)</td></tr>
+              <tr><td><code>src/config/state-dir.ts</code></td><td>State directory resolution / migration</td></tr>
+              <tr><td><code>src/config/config.ts</code></td><td>JSON5 config loader (openclaw.json)</td></tr>
+              <tr><td><code>src/config/credentials.ts</code></td><td>Credential management (device auth, OAuth)</td></tr>
+              <tr><td><code>src/routing/router.ts</code></td><td>Channel router (message dispatch)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Data File Locations</summary>
+      <div class="details-content">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Path</th><th>Format</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>~/.openclaw/openclaw.json</code></td><td>JSON5</td><td>Main configuration</td></tr>
+              <tr><td><code>~/.openclaw/agents/{id}/sessions/sessions.json</code></td><td>JSON5</td><td>Session store</td></tr>
+              <tr><td><code>~/.openclaw/agents/{id}/sessions/{sid}.jsonl</code></td><td>JSONL</td><td>Session transcript</td></tr>
+              <tr><td><code>~/.openclaw/memory/{id}.sqlite</code></td><td>SQLite</td><td>Vector index DB</td></tr>
+              <tr><td><code>~/.openclaw/credentials/device-auth.json</code></td><td>JSON</td><td>Device auth store</td></tr>
+              <tr><td><code>~/.openclaw/credentials/oauth-credentials.json</code></td><td>JSON</td><td>OAuth credentials</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===== Footer ===== -->
+    <footer class="page-footer">
+      OpenClaw Analysis Report &mdash; Memory Strategy &mdash; Generated for technical review
+    </footer>
+
+  </main>
+</div>
+
+<!-- ===== Back to Top Button ===== -->
+<button class="back-to-top" aria-label="Back to top">&#8593;</button>
+
+<!-- ===== Scripts ===== -->
+<script>
+// Back to top
+const btn = document.querySelector('.back-to-top');
+window.addEventListener('scroll', () => {
+  btn.classList.toggle('visible', window.scrollY > 400);
+});
+btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+// Active TOC highlighting
+const sections = document.querySelectorAll('h2[id]');
+const tocLinks = document.querySelectorAll('.toc-list a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      tocLinks.forEach(link => link.classList.remove('active'));
+      const activeLink = document.querySelector(`.toc-list a[href="#${entry.target.id}"]`);
+      if (activeLink) activeLink.classList.add('active');
+    }
+  });
+}, { rootMargin: '-80px 0px -60% 0px' });
+sections.forEach(s => observer.observe(s));
+
+// Sidebar toggle
+const toggle = document.querySelector('.sidebar-toggle');
+const sidebar = document.querySelector('.sidebar');
+if (toggle) toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+</script>
+
+</body>
+</html>
